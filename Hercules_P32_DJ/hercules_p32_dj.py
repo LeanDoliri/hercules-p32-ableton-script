@@ -132,26 +132,11 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def _mode2_devices(self):
-        if len(self.mixer.selected_strip()._track.devices) > 0:
-            self.device_tracktype_selected__chain_number_selected = DeviceComponent()
-            device_controls = (
-             EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 1, 1, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 1, _map_modes.absolute))
-            self.device_tracktype_selected__chain_number_selected.set_parameter_controls(tuple(device_controls))
-            self.set_device_component(self.device_tracktype_selected__chain_number_selected)
+        self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
         return
 
     def _remove_mode2_devices(self):
-        if hasattr(self, 'device_tracktype_selected__chain_number_selected'):
-            device_controls = (None, None, None, None, None, None, None, None)
-            self.device_tracktype_selected__chain_number_selected.set_parameter_controls(tuple(device_controls))
-            self.set_device_component(self.device_tracktype_selected__chain_number_selected)
+        self.mixer.selected_strip().set_send_controls(None)
         return
 
     def _mode1(self):
@@ -312,7 +297,6 @@ class hercules_p32_dj(ControlSurface):
         self.mixer.channel_strip(5).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 7, _map_modes.absolute))
         self.mixer.channel_strip(6).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 8, _map_modes.absolute))
         self.mixer.master_strip().set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 9, _map_modes.absolute))
-        self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
         arm_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 52)
         arm_specific_0.set_on_off_values(125, 1)
         self.mixer.channel_strip(0).set_arm_button(arm_specific_0)
@@ -449,7 +433,6 @@ class hercules_p32_dj(ControlSurface):
         self.mixer.channel_strip(5).set_volume_control(None)
         self.mixer.channel_strip(6).set_volume_control(None)
         self.mixer.master_strip().set_volume_control(None)
-        self.mixer.selected_strip().set_send_controls(None)
         self.mixer.channel_strip(0).set_arm_button(None)
         self.mixer.channel_strip(1).set_arm_button(None)
         self.mixer.channel_strip(2).set_arm_button(None)
