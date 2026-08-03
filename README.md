@@ -47,22 +47,14 @@ Se accede a este modo presionando el encoder de **BROWSE**.
 
 ---
 
-## 🖼️ Guía Visual del Controlador
+## 🖼️ Guía Visual del Controlador (Mods)
 
-A continuación, se ilustra la distribución de controles y funcionalidades del controlador bajo este script.
+A continuación, se ilustran las modificaciones exclusivas de los Modos 1 y 2 en este proyecto.
 
-![Página 1](docs/images/page_1.png)
-<br>
-![Página 2](docs/images/page_2.png)
-<br>
-![Página 3](docs/images/page_3.png)
-<br>
-![Página 4](docs/images/page_4.png)
-<br>
-![Página 5](docs/images/page_5.png)
-<br>
-![Página 6](docs/images/page_6.png)
-<br>
-![Página 7](docs/images/page_7.png)
+### Modo 1: Macros del Dispositivo
+![Modo 1 - Macros](docs/images/mode1.jpg)
 
-*(La documentación original completa se encuentra en la carpeta `docs/`).*
+### Modo 2: Envíos Dinámicos
+![Modo 2 - Envíos](docs/images/mode2.jpg)
+
+*(La documentación original del controlador se encuentra en formato PDF en la carpeta `docs/`).*
