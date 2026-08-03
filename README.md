@@ -45,16 +45,4 @@ Se accede a este modo presionando el encoder de **BROWSE**.
   - **Perilla MID:** Controla el Envío B.
   - **Perilla LOW:** Controla el Envío C.
 
----
 
-## 🖼️ Guía Visual del Controlador (Mods)
-
-A continuación, se ilustran las modificaciones exclusivas de los Modos 1 y 2 en este proyecto.
-
-### Modo 1: Macros del Dispositivo
-![Modo 1 - Macros](docs/images/mode1.jpg)
-
-### Modo 2: Envíos Dinámicos
-![Modo 2 - Envíos](docs/images/mode2.jpg)
-
-*(La documentación original del controlador se encuentra en formato PDF en la carpeta `docs/`).*
