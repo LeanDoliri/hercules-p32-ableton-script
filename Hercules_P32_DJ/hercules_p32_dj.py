@@ -132,7 +132,7 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def _mode2_devices(self):
-        self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute)))
+        self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
         return
 
     def _remove_mode2_devices(self):
