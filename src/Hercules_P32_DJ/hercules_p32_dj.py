@@ -616,6 +616,7 @@ class hercules_p32_dj(ControlSurface):
         # --- New Utility Buttons ---
         self.left_shift_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 7)
         self.left_shift_btn.set_on_off_values(127, 0)
+        self.left_shift_btn.send_value(0) # Apagar luz al inicio
         if not self.left_shift_btn.value_has_listener(self._do_toggle_session_view):
             self.left_shift_btn.add_value_listener(self._do_toggle_session_view, identify_sender=False)
 
