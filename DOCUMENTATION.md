@@ -1,68 +1,83 @@
-# Manual de Funcionalidades: Hercules P32 DJ (Custom Script) 🎛️
+# Manual de Referencia: Hercules P32 DJ - Ableton Live Script
 
-Este documento detalla exhaustivamente todas las funcionalidades, mapeos y modos de operación que han sido programados en este script personalizado para el controlador Hercules P32 DJ en Ableton Live.
+Este documento detalla todas las funcionalidades implementadas en el script remoto para el controlador **Hercules P32 DJ** en Ableton Live. El script organiza el controlador en diferentes modos y secciones para ofrecer control sobre el transporte, la mezcla, los dispositivos y el lanzamiento de clips.
 
----
+## 1. Controles Globales y de Transporte
+Estos controles están disponibles en todo momento, independientemente del modo activo:
 
-## 🎚️ Funcionalidades Globales (Siempre Activas)
-
-Sin importar en qué modo te encuentres, la sección de mezcla y transporte siempre estará disponible para garantizar que no pierdas el control principal del proyecto.
-
-### 1. Mezclador (Mixer)
-- **Faders de Volumen (1 a 7):** Controlan el volumen de las primeras 7 pistas del recuadro activo.
-- **Fader Master:** Controla el volumen general del proyecto (Master Track).
-- **Crossfader:** Mapeado directamente al crossfader de Ableton Live.
-
-### 2. Controles por Canal (Pistas 1 a 7)
-Para cada una de las 7 pistas, el hardware cuenta con botones físicos mapeados a las siguientes funciones:
-- **ARM (Grabar):** Arma la pista para recibir notas MIDI o audio.
-- **SOLO:** Aísla el audio de la pista seleccionada.
-- **MUTE:** Silencia la pista.
-- **SELECT:** Selecciona la pista, cambiando el enfoque de Ableton hacia ella.
-
-### 3. Transporte y Navegación
-- **Play, Stop, Record, Overdub:** Controles clásicos de transporte para el flujo de trabajo.
-- **Metrónomo:** Activa o desactiva el metrónomo de Live.
-- **Tempo Control (Encoders):** 
-  - Ajuste Grueso: Sube o baja el tempo global en pasos enteros (+/- 1 BPM).
-  - Ajuste Fino: Modifica el tempo con precisión decimal (+/- 0.1 BPM).
-- **Navegación de Pistas (< / >):** Te permite desplazarte lateralmente pista por pista a través de todo tu Live Set.
+*   **Cambio de Modo (BROWSE)**: Al presionar el encoder **BROWSE** (centro superior), el controlador alterna entre el **Modo 1 (Clip Launcher)** y el **Modo 2 (Finger Drumming)**.
+*   **Tempo y Metrónomo**:
+    *   **Giro del Encoder Izquierdo (Filter/Low)**: Modifica el tempo del proyecto (Tempo general).
+    *   **SHIFT + Giro del Encoder Izquierdo**: Ajuste fino del tempo (décimas de BPM).
+    *   **Presionar Encoder Izquierdo**: Activa o desactiva el Metrónomo.
+*   **Navegación de Pistas (LOAD)**: Los botones **A** y **B** (LOAD) permiten desplazarse hacia la pista izquierda o derecha respectivamente.
+*   **Transporte Básico**:
+    *   **PLAY (▶)**: Inicia la reproducción (Ubicado en la esquina inferior derecha).
+    *   **CUE**: Detiene la reproducción (Stop) (Ubicado junto al botón Play).
+    *   **REC**: Activa el modo de grabación general de Live (Record).
+    *   **SLIP**: Activa la sobregrabación MIDI (Overdub).
 
 ---
 
-## 🟢 MODO 1: Lanzamiento de Clips y Macros (Modo Predeterminado)
+## 2. Modo 1: Clip Launcher (Modo por Defecto)
+Al iniciar Ableton, el controlador entra en el Modo 1. Este modo está diseñado para el lanzamiento masivo de clips y el control de efectos/macros.
 
-Este es el modo principal al encender el controlador. Está diseñado para producir, improvisar y lanzar clips de forma masiva aprovechando al máximo la matriz de pads.
+### Matriz de Clips (7x4)
+La cuadrícula de pads de ambos decks funciona unificada como una matriz de lanzamiento de 7 pistas por 4 escenas (utilizando 28 pads en total). Los pads se iluminan para reflejar el estado del clip:
+*   **Morado**: El slot contiene un clip.
+*   **Azul**: El clip se está reproduciendo.
+*   **Rojo tenue**: El slot está listo para grabar.
+*   **Rojo brillante**: El clip se está grabando.
 
-### Grilla de Sesión (7x4)
-- **Matriz de Lanzamiento:** 28 pads iluminados que representan 7 pistas de ancho por 4 escenas de alto. Reflejan exactamente lo que ves en la vista Session de Ableton. Al presionar un pad, se dispara el clip correspondiente.
-- **Lanzamiento de Escenas:** 4 botones laterales dedicados a disparar filas completas (Scenes 1 a 4).
-- **Stop Clips:** 7 botones inferiores que detienen la reproducción de los clips en sus respectivas pistas.
-- **Navegación de Cuadrícula (Up/Down/Left/Right):** Botones para desplazar el recuadro rojo de Ableton hacia cualquier parte de tu sesión.
+### Funciones de Mezcla (Pads en Modo SLICER)
+Al activar el modo **SLICER** en los pads del controlador, la cuadrícula de 7x4 cambia su función para controlar los parámetros de mezcla de las 7 pistas:
+*   **Fila 1 (Superior)**: Seleccionar pista (el pad se ilumina brillante en la pista activa).
+*   **Fila 2**: Activador de Pista (Mute / Unmute).
+*   **Fila 3**: Activar Solo en la pista.
+*   **Fila 4 (Inferior)**: Armar pista para grabación.
 
-### Macros de Dispositivos (Efectos/Plugins)
-- **Perillas de Efectos (8 Encoders):** Las 4 perillas superiores del deck izquierdo y las 4 perillas del deck derecho se fusionan para controlar **automáticamente los primeros 8 Macros** del dispositivo (plugin, instrumento o Audio Effect Rack) que esté insertado en la pista actualmente seleccionada. 
+### Control de Loops Nativos y Beatjump (Pads en Modo LOOP)
+Al activar el modo **LOOP** en los pads del controlador, ambos decks asumen el control en tiempo real de los bucles (loops) de las 8 pistas (Pistas 1-4 en el deck izquierdo, Pistas 5-8 en el deck derecho). Cada columna vertical de 4 pads controla una pista específica.
+
+Funciones de los 4 pads por columna (de arriba hacia abajo):
+*   **Fila 1 (Pad Superior - Rojo)**: Activar/Desactivar el Loop del clip que está sonando en esa pista.
+*   **Fila 2 (Pad Medio-Superior - Violeta)**: Divide el tamaño del loop a la mitad (/2).
+*   **Fila 3 (Pad Medio-Inferior - Violeta)**: Multiplica el tamaño del loop al doble (x2).
+*   **Fila 4 (Pad Inferior - Azul)**: Beatjump hacia adelante (mueve el loop y el cabezal de reproducción saltando una cantidad equivalente al tamaño actual del loop).
+
+### Control de Dispositivos (Macros)
+Los knobs de la parte superior están vinculados a los controles del dispositivo (Device) de la pista seleccionada:
+*   Los 8 knobs correspondientes a **High, Mid, Low y Filter** (4 en el deck izquierdo y 4 en el derecho) controlan automáticamente los **8 Macros** del dispositivo principal o Rack activo en la pista seleccionada.
+
+### Detención y Navegación de Clips
+*   **Stop Clip**: Los 4 botones inferiores de la sección de efectos izquierda (**ON, ON, ON, MACRO**) y los 3 primeros de la derecha (**ON, ON, ON**) detienen el clip de su respectiva pista (Pistas 1 a 7).
+*   **Stop All Clips**: El botón **MACRO** del lado derecho detiene todos los clips del proyecto simultáneamente.
+*   **Navegación de la Matriz**: Usando **SHIFT + los pads de la esquina inferior derecha del deck izquierdo**, es posible desplazar el recuadro de la matriz (Track/Scene Bank) hacia Arriba, Abajo, Izquierda o Derecha.
 
 ---
 
-## 🔵 MODO 2: Envíos Dinámicos y Drumming (Activado vía BROWSE)
+## 3. Modo 2: Finger Drumming y Control de Envíos
+Al presionar el encoder **BROWSE**, el controlador entra en el Modo 2. Este modo está optimizado para tocar instrumentos virtuales y controlar efectos de envío.
 
-Al presionar el encoder central **BROWSE**, el controlador entra en el **Modo 2**. Este modo reconfigura el deck izquierdo para enfocarse en el diseño sonoro espacial y la interpretación rítmica.
+### Matriz Dividida (4x4 + Notas MIDI)
+*   **Deck Izquierdo (Clip Launcher 4x4)**: La matriz de lanzamiento de clips se reduce a una cuadrícula de 4 pistas por 4 escenas, utilizando únicamente los 16 pads del deck izquierdo.
+*   **Deck Derecho (Libre / MIDI Genérico)**: Los 16 pads del deck derecho se desconectan por completo del control de sesión y sus luces (LEDs) se apagan automáticamente. Esto permite utilizarlos libremente en todas sus páginas internas (HOTCUE, LOOP, SLICER y SAMPLER) para enviar notas MIDI estándar, ideales para mapeo manual, sintes, o tocar Drum Racks.
 
-### Los Envíos Dinámicos (Funcionalidad Exclusiva)
-Las perillas superiores del **Deck Izquierdo** se desconectan de los Macros del instrumento y pasan a inyectar señal a las pistas de retorno de la pista que tengas seleccionada en ese momento:
-- **Perilla 1 (HIGH):** Sube/Baja el nivel del **Envío A** (ideal para Reverb).
-- **Perilla 2 (MID):** Sube/Baja el nivel del **Envío B** (ideal para Delay).
-- **Perilla 3 (LOW):** Sube/Baja el nivel del **Envío C** (ideal para Chorus u otro efecto especial).
-*(Nota: La 4ta perilla queda libre. ¡Recuerda que tu proyecto de Ableton debe tener creadas las pistas de retorno A, B y C para que esto funcione!)*
+### Control de Envíos y Retornos (Sends & Returns)
+Se reasignan los controles de ecualización para manejar de forma avanzada los envíos y los retornos del proyecto:
+*   **Knobs de EQ Izquierdos (Cantidades de Envío)**:
+    *   **Knob HIGH (Izq)**: Controla el nivel del **Envío A** (Send A) de la pista actualmente seleccionada.
+    *   **Knob MID (Izq)**: Controla el nivel del **Envío B** (Send B) de la pista seleccionada.
+    *   **Knob LOW (Izq)**: Controla el nivel del **Envío C** (Send C) de la pista seleccionada.
+*   **Knobs de EQ Derechos (Volumen de Retornos)**:
+    *   **Knob HIGH (Der)**: Controla el volumen general del **Canal de Retorno A** (Return A).
+    *   **Knob MID (Der)**: Controla el volumen general del **Canal de Retorno B** (Return B).
+    *   **Knob LOW (Der)**: Controla el volumen general del **Canal de Retorno C** (Return C).
 
-### Grilla Compacta de Pads (4x4)
-- En este modo, la grilla del deck izquierdo se convierte en una matriz más compacta de 4 pistas por 4 escenas. 
-- Los 4 botones inferiores pasan a ser los "Stop Clips" de esas 4 pistas específicas.
-- Esta matriz condensada es especialmente útil para interpretar un Drum Rack usando los 16 pads del deck izquierdo sin perder el control de los envíos dinámicos justo arriba de tu mano.
+### Controles Mantenidos
+*   Los botones **Stop Clip** debajo de los knobs izquierdos detienen los clips de las pistas 1 a 4.
+*   La navegación de la matriz de clips (con SHIFT + Pads) sigue operativa en el deck izquierdo.
+*   Los controles de transporte y navegación de pistas siguen funcionando normalmente.
 
 ---
-
-## 🔄 Cómo Alternar entre Modos
-- Presiona **BROWSE** estando en Modo 1 para entrar al **Modo 2** (Envíos).
-- Presiona **BROWSE** estando en Modo 2 para regresar al **Modo 1** (Macros).
+*Nota: Este documento describe la funcionalidad programada en el script Python del proyecto. Para que los cambios físicos (como el comportamiento del modo SLICER o SHIFT) ocurran, dependen del firmware interno de la Hercules P32 DJ actuando en conjunto con el script.*

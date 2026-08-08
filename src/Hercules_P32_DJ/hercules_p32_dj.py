@@ -133,11 +133,100 @@ class hercules_p32_dj(ControlSurface):
 
     def _mode2_devices(self):
         self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
+        self.mixer.return_strip(0).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute))
+        self.mixer.return_strip(1).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute))
+        self.mixer.return_strip(2).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute))
         return
 
     def _remove_mode2_devices(self):
         self.mixer.selected_strip().set_send_controls(None)
+        self.mixer.return_strip(0).set_volume_control(None)
+        self.mixer.return_strip(1).set_volume_control(None)
+        self.mixer.return_strip(2).set_volume_control(None)
         return
+
+
+    def _setup_loop_controls(self):
+        self._loop_buttons = []
+        for deck, channel in enumerate([1, 2]):
+            for col in range(4):
+                track_index = deck * 4 + col
+                note_row1 = 80 + col
+                note_row2 = 76 + col
+                note_row3 = 72 + col
+                note_row4 = 68 + col
+                
+                b1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row1)
+                b2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row2)
+                b3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row3)
+                b4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row4)
+                
+                b1.add_value_listener(lambda value, btn=b1, t=track_index: self._on_loop_toggle(value, btn, t), identify_sender=False)
+                b2.add_value_listener(lambda value, btn=b2, t=track_index: self._on_loop_halve(value, btn, t), identify_sender=False)
+                b3.add_value_listener(lambda value, btn=b3, t=track_index: self._on_loop_double(value, btn, t), identify_sender=False)
+                b4.add_value_listener(lambda value, btn=b4, t=track_index: self._on_loop_beatjump(value, btn, t), identify_sender=False)
+                
+                # Turn on dim lights initially
+                b1.send_value(1) # Dim Red
+                b2.send_value(81) # Dim Purple
+                b3.send_value(81) # Dim Purple
+                b4.send_value(41) # Dim Blue
+                
+                self._loop_buttons.extend([b1, b2, b3, b4])
+
+    def _teardown_loop_controls(self):
+        if hasattr(self, '_loop_buttons'):
+            for btn in self._loop_buttons:
+                btn.send_value(0) # Turn off light completely
+                btn.disconnect()
+            self._loop_buttons = []
+
+    def _get_playing_clip(self, track_index):
+        if track_index < len(self.song().tracks):
+            track = self.song().tracks[track_index]
+            for slot in track.clip_slots:
+                if slot.has_clip and slot.clip.is_playing:
+                    return slot.clip
+        return None
+
+    def _on_loop_toggle(self, value, btn, track_index):
+        btn.send_value(40 if value > 0 else 1)
+        if value > 0:
+            clip = self._get_playing_clip(track_index)
+            if clip:
+                clip.looping = not clip.looping
+
+    def _on_loop_halve(self, value, btn, track_index):
+        btn.send_value(127 if value > 0 else 81)
+        if value > 0:
+            clip = self._get_playing_clip(track_index)
+            if clip and clip.looping:
+                length = clip.loop_end - clip.loop_start
+                if length > 0.125:
+                    clip.loop_end = clip.loop_start + (length / 2.0)
+
+    def _on_loop_double(self, value, btn, track_index):
+        btn.send_value(127 if value > 0 else 81)
+        if value > 0:
+            clip = self._get_playing_clip(track_index)
+            if clip and clip.looping:
+                length = clip.loop_end - clip.loop_start
+                clip.loop_end = clip.loop_start + (length * 2.0)
+
+    def _on_loop_beatjump(self, value, btn, track_index):
+        btn.send_value(80 if value > 0 else 41)
+        if value > 0:
+            clip = self._get_playing_clip(track_index)
+            if clip and clip.looping:
+                length = clip.loop_end - clip.loop_start
+                clip.loop_end += length
+                clip.loop_start += length
+                
+                # Attempt to move the playing position directly (supported in newer Ableton versions)
+                try:
+                    clip.playing_position = clip.playing_position + length
+                except:
+                    pass
 
     def _mode1(self):
         self.show_message('_mode1 is active')
@@ -182,8 +271,8 @@ class hercules_p32_dj(ControlSurface):
         scene_channels = [2, 2, 2, 2]
         scene_types = [MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE]
         scene_momentarys = [1, 1, 1, 1]
-        self._scene_launch_buttons = [ButtonElement(scene_momentarys[index], scene_types[index], scene_channels[index], scene_buttons[index]) for index in range(num_scenes)]
-        self._scene_launch_buttons = ButtonMatrixElement(rows=[self._scene_launch_buttons])
+        self._scene_launch_buttons_raw = [ButtonElement(scene_momentarys[index], scene_types[index], scene_channels[index], scene_buttons[index]) for index in range(num_scenes)]
+        self._scene_launch_buttons = ButtonMatrixElement(rows=[self._scene_launch_buttons_raw])
         self._session.set_scene_launch_buttons(self._scene_launch_buttons)
         self._session._enable_skinning()
         self._session.set_stop_clip_triggered_value(127)
@@ -221,13 +310,67 @@ class hercules_p32_dj(ControlSurface):
         self.session_down.add_value_listener(self._reload_active_devices, identify_sender=False)
         self._session._link()
         self.refresh_state()
+        self.arm_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 52)
+        self.arm_specific_4.set_on_off_values(125, 1)
+        self.mixer.channel_strip(4).set_arm_button(self.arm_specific_4)
+        self.arm_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 53)
+        self.arm_specific_5.set_on_off_values(125, 1)
+        self.mixer.channel_strip(5).set_arm_button(self.arm_specific_5)
+        self.arm_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 54)
+        self.arm_specific_6.set_on_off_values(125, 1)
+        self.mixer.channel_strip(6).set_arm_button(self.arm_specific_6)
+        self.solo_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 56)
+        self.solo_specific_4.set_on_off_values(126, 41)
+        self.mixer.channel_strip(4).set_solo_button(self.solo_specific_4)
+        self.solo_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 57)
+        self.solo_specific_5.set_on_off_values(126, 41)
+        self.mixer.channel_strip(5).set_solo_button(self.solo_specific_5)
+        self.solo_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 58)
+        self.solo_specific_6.set_on_off_values(126, 41)
+        self.mixer.channel_strip(6).set_solo_button(self.solo_specific_6)
+        self.mute_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 60)
+        self.mute_specific_4.set_on_off_values(127, 81)
+        self.mixer.channel_strip(4).set_mute_button(self.mute_specific_4)
+        self.mixer.channel_strip(4).set_invert_mute_feedback(True)
+        self.mute_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 61)
+        self.mute_specific_5.set_on_off_values(127, 81)
+        self.mixer.channel_strip(5).set_mute_button(self.mute_specific_5)
+        self.mixer.channel_strip(5).set_invert_mute_feedback(True)
+        self.mute_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 62)
+        self.mute_specific_6.set_on_off_values(127, 81)
+        self.mixer.channel_strip(6).set_mute_button(self.mute_specific_6)
+        self.mixer.channel_strip(6).set_invert_mute_feedback(True)
+        self.trackselect7 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 66)
+        self.trackselect7.set_on_off_values(127, 81)
+        self.trackselect7.add_value_listener(self.track_select_7, identify_sender=False)
+        self.trackselect6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 65)
+        self.trackselect6.set_on_off_values(127, 81)
+        self.trackselect6.add_value_listener(self.track_select_6, identify_sender=False)
+        self.trackselect5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 64)
+        self.trackselect5.set_on_off_values(127, 81)
+        self.trackselect5.add_value_listener(self.track_select_5, identify_sender=False)
         self._mode1_devices()
         self.add_device_listeners()
+        self._setup_loop_controls()
         self.mode_1_to_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 1)
         self.mode_1_to_2.add_value_listener(self._activate_mode2, identify_sender=False)
         return
 
     def _remove_mode1(self):
+        # Clear all LEDs on Right Deck (Channel 3 -> Note On 146)
+        for note in range(36, 68):
+            if hasattr(self, 'send_midi'):
+                self.send_midi((146, note, 0))
+            elif hasattr(self, '_send_midi'):
+                self._send_midi((146, note, 0))
+        if hasattr(self, '_pads') and self._pads is not None:
+            for pad in self._pads:
+                if pad is not None:
+                    pad.turn_off()
+        if hasattr(self, '_scene_launch_buttons_raw') and self._scene_launch_buttons_raw is not None:
+            for pad in self._scene_launch_buttons_raw:
+                if pad is not None:
+                    pad.turn_off()
         self._remove_mode1_devices()
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
@@ -247,9 +390,69 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_scene_bank_down_button(None)
         self.current_track_offset = self._session._track_offset
         self.current_scene_offset = self._session._scene_offset
+        self.mixer.channel_strip(4).set_arm_button(None)
+        self.mixer.channel_strip(5).set_arm_button(None)
+        self.mixer.channel_strip(6).set_arm_button(None)
+        self.mixer.channel_strip(4).set_solo_button(None)
+        self.mixer.channel_strip(5).set_solo_button(None)
+        self.mixer.channel_strip(6).set_solo_button(None)
+        self.mixer.channel_strip(4).set_mute_button(None)
+        self.mixer.channel_strip(5).set_mute_button(None)
+        self.mixer.channel_strip(6).set_mute_button(None)
+
+        if hasattr(self, 'arm_specific_4') and self.arm_specific_4 is not None:
+            self.arm_specific_4.disconnect()
+            self.arm_specific_4 = None
+        if hasattr(self, 'arm_specific_5') and self.arm_specific_5 is not None:
+            self.arm_specific_5.disconnect()
+            self.arm_specific_5 = None
+        if hasattr(self, 'arm_specific_6') and self.arm_specific_6 is not None:
+            self.arm_specific_6.disconnect()
+            self.arm_specific_6 = None
+            
+        if hasattr(self, 'solo_specific_4') and self.solo_specific_4 is not None:
+            self.solo_specific_4.disconnect()
+            self.solo_specific_4 = None
+        if hasattr(self, 'solo_specific_5') and self.solo_specific_5 is not None:
+            self.solo_specific_5.disconnect()
+            self.solo_specific_5 = None
+        if hasattr(self, 'solo_specific_6') and self.solo_specific_6 is not None:
+            self.solo_specific_6.disconnect()
+            self.solo_specific_6 = None
+            
+        if hasattr(self, 'mute_specific_4') and self.mute_specific_4 is not None:
+            self.mute_specific_4.disconnect()
+            self.mute_specific_4 = None
+        if hasattr(self, 'mute_specific_5') and self.mute_specific_5 is not None:
+            self.mute_specific_5.disconnect()
+            self.mute_specific_5 = None
+        if hasattr(self, 'mute_specific_6') and self.mute_specific_6 is not None:
+            self.mute_specific_6.disconnect()
+            self.mute_specific_6 = None
+            
+        if hasattr(self, 'trackselect7') and self.trackselect7 is not None:
+            self.trackselect7.disconnect()
+        if hasattr(self, 'trackselect6') and self.trackselect6 is not None:
+            self.trackselect6.disconnect()
+        if hasattr(self, 'trackselect5') and self.trackselect5 is not None:
+            self.trackselect5.disconnect()
+
+        if hasattr(self, 'trackselect7') and self.trackselect7 is not None:
+            self.trackselect7.send_value(0)
+            self.trackselect7.remove_value_listener(self.track_select_7)
+            self.trackselect7 = None
+        if hasattr(self, 'trackselect6') and self.trackselect6 is not None:
+            self.trackselect6.send_value(0)
+            self.trackselect6.remove_value_listener(self.track_select_6)
+            self.trackselect6 = None
+        if hasattr(self, 'trackselect5') and self.trackselect5 is not None:
+            self.trackselect5.send_value(0)
+            self.trackselect5.remove_value_listener(self.track_select_5)
+            self.trackselect5 = None
         self._session._unlink()
         self._session = None
         self.mode_1_to_2.remove_value_listener(self._activate_mode2)
+        self._teardown_loop_controls()
         self.mode_1_to_2 = None
         return
 
@@ -297,85 +500,46 @@ class hercules_p32_dj(ControlSurface):
         self.mixer.channel_strip(5).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 7, _map_modes.absolute))
         self.mixer.channel_strip(6).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 8, _map_modes.absolute))
         self.mixer.master_strip().set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 9, _map_modes.absolute))
-        arm_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 52)
-        arm_specific_0.set_on_off_values(125, 1)
-        self.mixer.channel_strip(0).set_arm_button(arm_specific_0)
-        arm_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 53)
-        arm_specific_1.set_on_off_values(125, 1)
-        self.mixer.channel_strip(1).set_arm_button(arm_specific_1)
-        arm_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 54)
-        arm_specific_2.set_on_off_values(125, 1)
-        self.mixer.channel_strip(2).set_arm_button(arm_specific_2)
-        arm_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 55)
-        arm_specific_3.set_on_off_values(125, 1)
-        self.mixer.channel_strip(3).set_arm_button(arm_specific_3)
-        arm_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 52)
-        arm_specific_4.set_on_off_values(125, 1)
-        self.mixer.channel_strip(4).set_arm_button(arm_specific_4)
-        arm_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 53)
-        arm_specific_5.set_on_off_values(125, 1)
-        self.mixer.channel_strip(5).set_arm_button(arm_specific_5)
-        arm_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 54)
-        arm_specific_6.set_on_off_values(125, 1)
-        self.mixer.channel_strip(6).set_arm_button(arm_specific_6)
-        solo_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 56)
-        solo_specific_0.set_on_off_values(126, 41)
-        self.mixer.channel_strip(0).set_solo_button(solo_specific_0)
-        solo_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 57)
-        solo_specific_1.set_on_off_values(126, 41)
-        self.mixer.channel_strip(1).set_solo_button(solo_specific_1)
-        solo_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 58)
-        solo_specific_2.set_on_off_values(126, 41)
-        self.mixer.channel_strip(2).set_solo_button(solo_specific_2)
-        solo_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 59)
-        solo_specific_3.set_on_off_values(126, 41)
-        self.mixer.channel_strip(3).set_solo_button(solo_specific_3)
-        solo_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 56)
-        solo_specific_4.set_on_off_values(126, 41)
-        self.mixer.channel_strip(4).set_solo_button(solo_specific_4)
-        solo_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 57)
-        solo_specific_5.set_on_off_values(126, 41)
-        self.mixer.channel_strip(5).set_solo_button(solo_specific_5)
-        solo_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 58)
-        solo_specific_6.set_on_off_values(126, 41)
-        self.mixer.channel_strip(6).set_solo_button(solo_specific_6)
-        mute_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 60)
-        mute_specific_0.set_on_off_values(127, 81)
-        self.mixer.channel_strip(0).set_mute_button(mute_specific_0)
+        self.arm_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 52)
+        self.arm_specific_0.set_on_off_values(125, 1)
+        self.mixer.channel_strip(0).set_arm_button(self.arm_specific_0)
+        self.arm_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 53)
+        self.arm_specific_1.set_on_off_values(125, 1)
+        self.mixer.channel_strip(1).set_arm_button(self.arm_specific_1)
+        self.arm_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 54)
+        self.arm_specific_2.set_on_off_values(125, 1)
+        self.mixer.channel_strip(2).set_arm_button(self.arm_specific_2)
+        self.arm_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 55)
+        self.arm_specific_3.set_on_off_values(125, 1)
+        self.mixer.channel_strip(3).set_arm_button(self.arm_specific_3)
+        self.solo_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 56)
+        self.solo_specific_0.set_on_off_values(126, 41)
+        self.mixer.channel_strip(0).set_solo_button(self.solo_specific_0)
+        self.solo_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 57)
+        self.solo_specific_1.set_on_off_values(126, 41)
+        self.mixer.channel_strip(1).set_solo_button(self.solo_specific_1)
+        self.solo_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 58)
+        self.solo_specific_2.set_on_off_values(126, 41)
+        self.mixer.channel_strip(2).set_solo_button(self.solo_specific_2)
+        self.solo_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 59)
+        self.solo_specific_3.set_on_off_values(126, 41)
+        self.mixer.channel_strip(3).set_solo_button(self.solo_specific_3)
+        self.mute_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 60)
+        self.mute_specific_0.set_on_off_values(127, 81)
+        self.mixer.channel_strip(0).set_mute_button(self.mute_specific_0)
         self.mixer.channel_strip(0).set_invert_mute_feedback(True)
-        mute_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 61)
-        mute_specific_1.set_on_off_values(127, 81)
-        self.mixer.channel_strip(1).set_mute_button(mute_specific_1)
+        self.mute_specific_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 61)
+        self.mute_specific_1.set_on_off_values(127, 81)
+        self.mixer.channel_strip(1).set_mute_button(self.mute_specific_1)
         self.mixer.channel_strip(1).set_invert_mute_feedback(True)
-        mute_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 62)
-        mute_specific_2.set_on_off_values(127, 81)
-        self.mixer.channel_strip(2).set_mute_button(mute_specific_2)
+        self.mute_specific_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 62)
+        self.mute_specific_2.set_on_off_values(127, 81)
+        self.mixer.channel_strip(2).set_mute_button(self.mute_specific_2)
         self.mixer.channel_strip(2).set_invert_mute_feedback(True)
-        mute_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 63)
-        mute_specific_3.set_on_off_values(127, 81)
-        self.mixer.channel_strip(3).set_mute_button(mute_specific_3)
+        self.mute_specific_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 63)
+        self.mute_specific_3.set_on_off_values(127, 81)
+        self.mixer.channel_strip(3).set_mute_button(self.mute_specific_3)
         self.mixer.channel_strip(3).set_invert_mute_feedback(True)
-        mute_specific_4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 60)
-        mute_specific_4.set_on_off_values(127, 81)
-        self.mixer.channel_strip(4).set_mute_button(mute_specific_4)
-        self.mixer.channel_strip(4).set_invert_mute_feedback(True)
-        mute_specific_5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 61)
-        mute_specific_5.set_on_off_values(127, 81)
-        self.mixer.channel_strip(5).set_mute_button(mute_specific_5)
-        self.mixer.channel_strip(5).set_invert_mute_feedback(True)
-        mute_specific_6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 62)
-        mute_specific_6.set_on_off_values(127, 81)
-        self.mixer.channel_strip(6).set_mute_button(mute_specific_6)
-        self.mixer.channel_strip(6).set_invert_mute_feedback(True)
-        self.trackselect7 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 66)
-        self.trackselect7.set_on_off_values(127, 81)
-        self.trackselect7.add_value_listener(self.track_select_7, identify_sender=False)
-        self.trackselect6 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 65)
-        self.trackselect6.set_on_off_values(127, 81)
-        self.trackselect6.add_value_listener(self.track_select_6, identify_sender=False)
-        self.trackselect5 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 64)
-        self.trackselect5.set_on_off_values(127, 81)
-        self.trackselect5.add_value_listener(self.track_select_5, identify_sender=False)
         self.trackselect4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 67)
         self.trackselect4.set_on_off_values(127, 81)
         self.trackselect4.add_value_listener(self.track_select_4, identify_sender=False)
@@ -437,32 +601,14 @@ class hercules_p32_dj(ControlSurface):
         self.mixer.channel_strip(1).set_arm_button(None)
         self.mixer.channel_strip(2).set_arm_button(None)
         self.mixer.channel_strip(3).set_arm_button(None)
-        self.mixer.channel_strip(4).set_arm_button(None)
-        self.mixer.channel_strip(5).set_arm_button(None)
-        self.mixer.channel_strip(6).set_arm_button(None)
         self.mixer.channel_strip(0).set_solo_button(None)
         self.mixer.channel_strip(1).set_solo_button(None)
         self.mixer.channel_strip(2).set_solo_button(None)
         self.mixer.channel_strip(3).set_solo_button(None)
-        self.mixer.channel_strip(4).set_solo_button(None)
-        self.mixer.channel_strip(5).set_solo_button(None)
-        self.mixer.channel_strip(6).set_solo_button(None)
         self.mixer.channel_strip(0).set_mute_button(None)
         self.mixer.channel_strip(1).set_mute_button(None)
         self.mixer.channel_strip(2).set_mute_button(None)
         self.mixer.channel_strip(3).set_mute_button(None)
-        self.mixer.channel_strip(4).set_mute_button(None)
-        self.mixer.channel_strip(5).set_mute_button(None)
-        self.mixer.channel_strip(6).set_mute_button(None)
-        self.trackselect7.send_value(0)
-        self.trackselect7.remove_value_listener(self.track_select_7)
-        self.trackselect7 = None
-        self.trackselect6.send_value(0)
-        self.trackselect6.remove_value_listener(self.track_select_6)
-        self.trackselect6 = None
-        self.trackselect5.send_value(0)
-        self.trackselect5.remove_value_listener(self.track_select_5)
-        self.trackselect5 = None
         self.trackselect4.send_value(0)
         self.trackselect4.remove_value_listener(self.track_select_4)
         self.trackselect4 = None
