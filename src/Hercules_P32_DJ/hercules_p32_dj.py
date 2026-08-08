@@ -17,6 +17,26 @@ from _Framework.SessionComponent import SessionComponent
 from _Framework.EncoderElement import *
 from .ConfigurableButtonElement import ConfigurableButtonElement
 
+class CappedEncoderElement(EncoderElement):
+    def __init__(self, msg_type, channel, identifier, map_mode, *a, **k):
+        super(CappedEncoderElement, self).__init__(msg_type, channel, identifier, map_mode, *a, **k)
+        self._capped_parameter = None
+        
+    def connect_to(self, parameter):
+        self._capped_parameter = parameter
+        if not self.value_has_listener(self._on_custom_value):
+            self.add_value_listener(self._on_custom_value)
+            
+    def release_parameter(self):
+        self._capped_parameter = None
+        if self.value_has_listener(self._on_custom_value):
+            self.remove_value_listener(self._on_custom_value)
+        super(CappedEncoderElement, self).release_parameter()
+        
+    def _on_custom_value(self, value):
+        if self._capped_parameter is not None:
+            self._capped_parameter.value = (value / 127.0) * 0.85
+
 class hercules_p32_dj(ControlSurface):
 
     def __init__(self, c_instance):
@@ -132,10 +152,10 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def _mode2_devices(self):
-        self.mixer.selected_strip().set_send_controls((EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
-        self.mixer.return_strip(0).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute))
-        self.mixer.return_strip(1).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute))
-        self.mixer.return_strip(2).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute))
+        self.mixer.selected_strip().set_send_controls((CappedEncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), CappedEncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), CappedEncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
+        self.mixer.return_strip(0).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute))
+        self.mixer.return_strip(1).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute))
+        self.mixer.return_strip(2).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute))
         return
 
     def _remove_mode2_devices(self):
@@ -492,14 +512,14 @@ class hercules_p32_dj(ControlSurface):
         global lv_tempo_fine_control_updown_mode0
         self.show_message('_mode0 is active')
         self.mixer.set_crossfader_control(EncoderElement(MIDI_CC_TYPE, 0, 1, _map_modes.absolute))
-        self.mixer.channel_strip(0).set_volume_control(EncoderElement(MIDI_CC_TYPE, 1, 6, _map_modes.absolute))
-        self.mixer.channel_strip(1).set_volume_control(EncoderElement(MIDI_CC_TYPE, 1, 7, _map_modes.absolute))
-        self.mixer.channel_strip(2).set_volume_control(EncoderElement(MIDI_CC_TYPE, 1, 8, _map_modes.absolute))
-        self.mixer.channel_strip(3).set_volume_control(EncoderElement(MIDI_CC_TYPE, 1, 9, _map_modes.absolute))
-        self.mixer.channel_strip(4).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 6, _map_modes.absolute))
-        self.mixer.channel_strip(5).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 7, _map_modes.absolute))
-        self.mixer.channel_strip(6).set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 8, _map_modes.absolute))
-        self.mixer.master_strip().set_volume_control(EncoderElement(MIDI_CC_TYPE, 2, 9, _map_modes.absolute))
+        self.mixer.channel_strip(0).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 1, 6, _map_modes.absolute))
+        self.mixer.channel_strip(1).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 1, 7, _map_modes.absolute))
+        self.mixer.channel_strip(2).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 1, 8, _map_modes.absolute))
+        self.mixer.channel_strip(3).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 1, 9, _map_modes.absolute))
+        self.mixer.channel_strip(4).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 6, _map_modes.absolute))
+        self.mixer.channel_strip(5).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 7, _map_modes.absolute))
+        self.mixer.channel_strip(6).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 8, _map_modes.absolute))
+        self.mixer.master_strip().set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 9, _map_modes.absolute))
         self.arm_specific_0 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 52)
         self.arm_specific_0.set_on_off_values(125, 1)
         self.mixer.channel_strip(0).set_arm_button(self.arm_specific_0)
