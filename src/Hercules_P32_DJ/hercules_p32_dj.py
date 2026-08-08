@@ -38,6 +38,34 @@ class CappedEncoderElement(EncoderElement):
             self._capped_parameter.value = (value / 127.0) * 0.85
 
 class hercules_p32_dj(ControlSurface):
+    def _do_toggle_session_view(self, value):
+        if value > 0:
+            app_view = self.application().view
+            if app_view.is_view_visible('Session'):
+                app_view.show_view('Arranger')
+            else:
+                app_view.show_view('Session')
+
+    def _do_tap_tempo(self, value):
+        if value > 0:
+            self.song().tap_tempo()
+
+    def _do_locator(self, value):
+        if value > 0:
+            self.song().set_or_delete_cue()
+            self.show_message('Locator Set/Deleted')
+
+    def _do_undo(self, value):
+        if value > 0 and self.song().can_undo:
+            self.song().undo()
+            self.show_message('Undo')
+
+    def _do_redo(self, value):
+        if value > 0 and self.song().can_redo:
+            self.song().redo()
+            self.show_message('Redo')
+
+
 
     def __init__(self, c_instance):
         global _map_modes
@@ -585,14 +613,55 @@ class hercules_p32_dj(ControlSurface):
         metronome_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 1)
         metronome_button.name = 'metronome_button'
         self.transport.set_metronome_button(metronome_button)
-        play_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 10)
-        play_button.set_on_off_values(127, 0)
-        play_button.name = 'play_button'
-        self.transport.set_play_button(play_button)
+        # --- New Utility Buttons ---
+        self.left_shift_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 7)
+        self.left_shift_btn.set_on_off_values(127, 0)
+        if not self.left_shift_btn.value_has_listener(self._do_toggle_session_view):
+            self.left_shift_btn.add_value_listener(self._do_toggle_session_view, identify_sender=False)
+
+        self.right_play_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 10)
+        self.right_play_btn.set_on_off_values(127, 0)
+        self.right_play_btn.name = 'play_button'
+        self.transport.set_play_button(self.right_play_btn)
+        
+        self.left_play_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 10)
+        self.left_play_btn.set_on_off_values(127, 0)
+        if not self.left_play_btn.value_has_listener(self._do_locator):
+            self.left_play_btn.add_value_listener(self._do_locator, identify_sender=False)
+
+        self.left_cue_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 9)
+        self.left_cue_btn.set_on_off_values(127, 0)
+        if not self.left_cue_btn.value_has_listener(self._do_undo):
+            self.left_cue_btn.add_value_listener(self._do_undo, identify_sender=False)
+            
         stop_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 9)
         stop_button.set_on_off_values(127, 0)
         stop_button.name = 'stop_button'
         self.transport.set_stop_button(stop_button)
+
+        # Right Sync -> Tap Tempo
+        self.right_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 8)
+        self.right_sync_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 11)
+        self.right_sync_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 12)
+        self.transport.set_tap_tempo_button(self.right_sync_1)
+        if not self.right_sync_2.value_has_listener(self._do_tap_tempo):
+            self.right_sync_2.add_value_listener(self._do_tap_tempo, identify_sender=False)
+        if not self.right_sync_3.value_has_listener(self._do_tap_tempo):
+            self.right_sync_3.add_value_listener(self._do_tap_tempo, identify_sender=False)
+
+        # Left Sync -> Redo
+        self.left_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 8)
+        self.left_sync_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 11)
+        self.left_sync_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 12)
+        if not self.left_sync_1.value_has_listener(self._do_redo):
+            self.left_sync_1.add_value_listener(self._do_redo, identify_sender=False)
+        if not self.left_sync_2.value_has_listener(self._do_redo):
+            self.left_sync_2.add_value_listener(self._do_redo, identify_sender=False)
+        if not self.left_sync_3.value_has_listener(self._do_redo):
+            self.left_sync_3.add_value_listener(self._do_redo, identify_sender=False)
+        
+
+        # ---------------------------
         record_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 2)
         record_button.set_on_off_values(127, 0)
         record_button.name = 'record_button'
