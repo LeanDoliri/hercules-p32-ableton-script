@@ -31,6 +31,9 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
 ### 2.2. Knobs Superiores (Macros)
 *   En el Modo 1, los 8 knobs superiores (High, Mid, Low, Filter de ambos decks) controlan los **8 Macros** del dispositivo (Instrumento o Rack de Efectos) de la pista que esté seleccionada.
 
+### 2.3. Faders y Knobs de Volumen
+*   Los faders/knobs de volumen de las pistas 1 a 7 (4 en Deck Izq, 3 en Deck Der + 1 Master) se reasignan dinámicamente al desplazarse por las pistas o bancos (`MixerComponent` sincronizado con `SessionComponent`), siguiendo siempre las 7 pistas visibles en la matriz de pads.
+
 ---
 
 ## 3. Modo 2 (Secundario)
@@ -67,5 +70,5 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **CUE:** Deshacer (Undo)
     *   **SYNC:** Rehacer (Redo)
     *   **SHIFT:** Alternar Vista Session / Arrangement
-*   **LOAD A / LOAD B:** Desplazamiento por las pistas (Izquierda / Derecha).
-*   **SHIFT + Pads Izq (Modo 1):** Navegación de la cuadrícula (Bank Up/Down/Left/Right).
+*   **LOAD A / LOAD B:** Desplazamiento por las pistas (Izquierda / Derecha). Si la pista seleccionada supera el banco visible actual, el cuadrante de sesión, los pads y los faders de volumen se desplazan automáticamente para mantenerla a la vista.
+*   **SHIFT + Pads Izq (Modo 1):** Navegación de la cuadrícula (Bank Up/Down/Left/Right). Al mover el banco horizontal, los pads, faders de volumen, mute/solo/arm y LEDs de selección se actualizan en sincronía.

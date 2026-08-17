@@ -75,14 +75,14 @@ class hercules_p32_dj(ControlSurface):
             _map_modes = Live.MidiMap.MapMode
             self.current_track_offset = 0
             self.current_scene_offset = 0
-            num_tracks = 128
+            num_tracks = 7
             num_returns = 24
             self.mixer = MixerComponent(num_tracks, num_returns)
             self._mode0()
             active_mode = '_mode1'
             self._set_active_mode()
             self._set_track_select_led()
-            self.show_message('Powered by remotify.io')
+            self.show_message('Hercules P32 DJ Ready')
         return
 
     def _mode2(self):
@@ -95,6 +95,9 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_offsets(track_offset, scene_offset)
         self._session._reassign_scenes()
         self.set_highlighting_session_component(self._session)
+        self._session.set_mixer(self.mixer)
+        if hasattr(self._session, 'add_offset_listener'):
+            self._session.add_offset_listener(self._on_session_offset_changed)
         session_buttons = [
          48, 49, 50, 51, 44, 45, 46, 47, 40, 41, 42, 43, 36, 37, 38, 39]
         session_channels = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
@@ -172,8 +175,13 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_scene_bank_down_button(None)
         self.session_up.remove_value_listener(self._reload_active_devices)
         self._session.set_scene_bank_up_button(None)
-        self.current_track_offset = self._session._track_offset
-        self.current_scene_offset = self._session._scene_offset
+        if hasattr(self, '_session') and self._session is not None:
+            if hasattr(self._session, 'remove_offset_listener') and hasattr(self._session, 'offset_has_listener'):
+                if self._session.offset_has_listener(self._on_session_offset_changed):
+                    self._session.remove_offset_listener(self._on_session_offset_changed)
+            self.current_track_offset = self._session._track_offset
+            self.current_scene_offset = self._session._scene_offset
+            self._session.set_mixer(None)
         self._session = None
         self.mode_2_to_1.remove_value_listener(self._activate_mode1)
         self.mode_2_to_1 = None
@@ -230,8 +238,12 @@ class hercules_p32_dj(ControlSurface):
             self._loop_buttons = []
 
     def _get_playing_clip(self, track_index):
-        if track_index < len(self.song().tracks):
-            track = self.song().tracks[track_index]
+        offset = 0
+        if hasattr(self, '_session') and self._session is not None:
+            offset = self._session._track_offset
+        actual_idx = offset + track_index
+        if actual_idx < len(self.song().tracks):
+            track = self.song().tracks[actual_idx]
             for slot in track.clip_slots:
                 if slot.has_clip and slot.clip.is_playing:
                     return slot.clip
@@ -286,6 +298,9 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_offsets(track_offset, scene_offset)
         self._session._reassign_scenes()
         self.set_highlighting_session_component(self._session)
+        self._session.set_mixer(self.mixer)
+        if hasattr(self._session, 'add_offset_listener'):
+            self._session.add_offset_listener(self._on_session_offset_changed)
         session_buttons = [
          48, 49, 50, 51, 48, 49, 50, 44, 45, 46, 47, 44, 45, 46, 
          40, 41, 42, 43, 40, 41, 42, 36, 37, 38, 39, 36, 37, 
@@ -436,8 +451,13 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_track_bank_right_button(None)
         self.session_down.remove_value_listener(self._reload_active_devices)
         self._session.set_scene_bank_down_button(None)
-        self.current_track_offset = self._session._track_offset
-        self.current_scene_offset = self._session._scene_offset
+        if hasattr(self, '_session') and self._session is not None:
+            if hasattr(self._session, 'remove_offset_listener') and hasattr(self._session, 'offset_has_listener'):
+                if self._session.offset_has_listener(self._on_session_offset_changed):
+                    self._session.remove_offset_listener(self._on_session_offset_changed)
+            self.current_track_offset = self._session._track_offset
+            self.current_scene_offset = self._session._scene_offset
+            self._session.set_mixer(None)
         self.mixer.channel_strip(4).set_arm_button(None)
         self.mixer.channel_strip(5).set_arm_button(None)
         self.mixer.channel_strip(6).set_arm_button(None)
@@ -1021,20 +1041,41 @@ class hercules_p32_dj(ControlSurface):
                 self.song().tempo = self.song().tempo - 1
         return
 
+    def _on_session_offset_changed(self):
+        if hasattr(self, '_session') and self._session is not None:
+            self.current_track_offset = self._session._track_offset
+            self.current_scene_offset = self._session._scene_offset
+            if hasattr(self, 'mixer') and self.mixer is not None:
+                self.mixer.set_track_offset(self._session._track_offset)
+            if hasattr(self, '_set_track_select_led'):
+                self._set_track_select_led()
+
+    def _ensure_track_in_view(self, track_index):
+        if hasattr(self, '_session') and self._session is not None:
+            num_tracks = self._session.width() if hasattr(self._session, 'width') else 7
+            current_offset = self._session._track_offset
+            if track_index < current_offset:
+                self._session.set_offsets(track_index, self._session._scene_offset)
+            elif track_index >= current_offset + num_tracks:
+                self._session.set_offsets(track_index - num_tracks + 1, self._session._scene_offset)
+
     def _trackleft_track_nav(self, value):
         if value > 0:
             track_idx = self.selected_track_idx() - 1
             if track_idx > 0:
-                self.song().view.selected_track = self.song().tracks[track_idx - 1]
+                new_idx = track_idx - 1
+                self.song().view.selected_track = self.song().tracks[new_idx]
+                self._ensure_track_in_view(new_idx)
         return
 
     def _trackright_track_nav(self, value):
         if value > 0:
-            track_idx = self.selected_track_idx()
+            track_idx = self.selected_track_idx() - 1
             num_of_tracks = len(self.song().tracks)
-            if track_idx < num_of_tracks:
-                track_idx = self.selected_track_idx() - 1
-                self.song().view.selected_track = self.song().tracks[track_idx + 1]
+            if track_idx + 1 < num_of_tracks:
+                new_idx = track_idx + 1
+                self.song().view.selected_track = self.song().tracks[new_idx]
+                self._ensure_track_in_view(new_idx)
         return
 
     def _on_selected_track_changed(self):

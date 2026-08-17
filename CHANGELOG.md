@@ -33,5 +33,11 @@ En el **Modo 1**, la página **LOOP** fue programada desde cero para controlar l
 *   **Fila 3 (Double):** Multiplica el tamaño del loop al doble.
 *   **Fila 4 (Beatjump Adelante):** Salta hacia adelante una distancia equivalente al tamaño del loop.
 
+## 4. Reasignación Dinámica de Faders de Volumen y Mezclador (Banking & Auto-Scroll)
+Se rediseñó la interacción entre `SessionComponent` y `MixerComponent` para que los controles de mezcla sigan al cuadrante de sesión.
+*   **¿Qué hace?** Los 7 faders de volumen físico (4 Deck Izq, 3 Deck Der) y los botones de Arm/Solo/Mute de la página SLICER se reasignan en tiempo real al desplazarse horizontalmente por el proyecto (mediante *SHIFT + Pads de Banco*).
+*   **Auto-Scroll en Navegación (`LOAD A / LOAD B`):** Al cambiar de pista seleccionada con los botones `LOAD`, si la pista elegida queda fuera del banco visible actual de 7 pistas, el cuadrante de sesión y los faders se desplazan automáticamente para mantenerla visible y bajo control.
+*   **Sincronización con Página LOOP:** Las acciones de Loop y Beatjump (`_get_playing_clip`) ahora respetan el offset de pistas activo.
+
 > [!NOTE]
 > Las luces LED de estos controles funcionan mediante la lógica nativa del script original cuando detectan señales entrantes válidas. Las páginas "HOTCUE" de ambos decks continúan 100% libres de asignaciones nativas, permitiendo un mapeo MIDI manual por parte del usuario para instrumentos o efectos VST.

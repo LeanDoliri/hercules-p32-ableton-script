@@ -34,7 +34,7 @@ El controlador opera bajo dos modos principales:
 
 ### Modo 1: Lanzamiento y Macros (Predeterminado)
 - **Pads:** Grilla de 7x4 dedicada al lanzamiento de clips en Session View.
-- **Mezclador:** Control de volumen y navegación entre las pistas.
+- **Mezclador Dinámico:** Control de volumen con faders físicos (pistas 1 a 7 + Master), mute, solo y arm que se desplazan y reasignan automáticamente al navegar entre bancos o pistas (`LOAD A/B`).
 - **Macros:** Las 8 perillas superiores controlan los Macros del dispositivo (plugin) seleccionado.
 
 ### Modo 2: Finger Drumming y Envíos Dinámicos
