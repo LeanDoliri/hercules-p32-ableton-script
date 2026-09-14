@@ -209,10 +209,15 @@ class hercules_p32_dj(ControlSurface):
                 b3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row3)
                 b4 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, channel, note_row4)
                 
-                b1.add_value_listener(lambda value, btn=b1, t=track_index: self._on_loop_toggle(value, btn, t), identify_sender=False)
-                b2.add_value_listener(lambda value, btn=b2, t=track_index: self._on_loop_halve(value, btn, t), identify_sender=False)
-                b3.add_value_listener(lambda value, btn=b3, t=track_index: self._on_loop_double(value, btn, t), identify_sender=False)
-                b4.add_value_listener(lambda value, btn=b4, t=track_index: self._on_loop_beatjump(value, btn, t), identify_sender=False)
+                cb1 = lambda value, btn=b1, t=track_index: self._on_loop_toggle(value, btn, t)
+                cb2 = lambda value, btn=b2, t=track_index: self._on_loop_halve(value, btn, t)
+                cb3 = lambda value, btn=b3, t=track_index: self._on_loop_double(value, btn, t)
+                cb4 = lambda value, btn=b4, t=track_index: self._on_loop_beatjump(value, btn, t)
+                
+                b1.add_value_listener(cb1, identify_sender=False)
+                b2.add_value_listener(cb2, identify_sender=False)
+                b3.add_value_listener(cb3, identify_sender=False)
+                b4.add_value_listener(cb4, identify_sender=False)
                 
                 # Turn on dim lights initially
                 b1.send_value(1) # Dim Red
@@ -220,13 +225,28 @@ class hercules_p32_dj(ControlSurface):
                 b3.send_value(81) # Dim Purple
                 b4.send_value(41) # Dim Blue
                 
-                self._loop_buttons.extend([b1, b2, b3, b4])
+                self._loop_buttons.append((b1, cb1))
+                self._loop_buttons.append((b2, cb2))
+                self._loop_buttons.append((b3, cb3))
+                self._loop_buttons.append((b4, cb4))
 
     def _teardown_loop_controls(self):
-        if hasattr(self, '_loop_buttons'):
-            for btn in self._loop_buttons:
-                btn.send_value(0) # Turn off light completely
-                btn.disconnect()
+        if hasattr(self, '_loop_buttons') and self._loop_buttons:
+            for item in self._loop_buttons:
+                try:
+                    if isinstance(item, tuple):
+                        btn, cb = item
+                        try:
+                            btn.remove_value_listener(cb)
+                        except Exception:
+                            pass
+                        btn.send_value(0)
+                        btn.disconnect()
+                    else:
+                        item.send_value(0)
+                        item.disconnect()
+                except Exception:
+                    pass
             self._loop_buttons = []
 
     def _get_playing_clip(self, track_index):
@@ -473,23 +493,28 @@ class hercules_p32_dj(ControlSurface):
             self.mute_specific_6 = None
             
         if hasattr(self, 'trackselect7') and self.trackselect7 is not None:
+            try:
+                self.trackselect7.send_value(0)
+                self.trackselect7.remove_value_listener(self.track_select_7)
+            except Exception:
+                pass
             self.trackselect7.disconnect()
-        if hasattr(self, 'trackselect6') and self.trackselect6 is not None:
-            self.trackselect6.disconnect()
-        if hasattr(self, 'trackselect5') and self.trackselect5 is not None:
-            self.trackselect5.disconnect()
-
-        if hasattr(self, 'trackselect7') and self.trackselect7 is not None:
-            self.trackselect7.send_value(0)
-            self.trackselect7.remove_value_listener(self.track_select_7)
             self.trackselect7 = None
         if hasattr(self, 'trackselect6') and self.trackselect6 is not None:
-            self.trackselect6.send_value(0)
-            self.trackselect6.remove_value_listener(self.track_select_6)
+            try:
+                self.trackselect6.send_value(0)
+                self.trackselect6.remove_value_listener(self.track_select_6)
+            except Exception:
+                pass
+            self.trackselect6.disconnect()
             self.trackselect6 = None
         if hasattr(self, 'trackselect5') and self.trackselect5 is not None:
-            self.trackselect5.send_value(0)
-            self.trackselect5.remove_value_listener(self.track_select_5)
+            try:
+                self.trackselect5.send_value(0)
+                self.trackselect5.remove_value_listener(self.track_select_5)
+            except Exception:
+                pass
+            self.trackselect5.disconnect()
             self.trackselect5 = None
         self._session._unlink()
         self._session = None

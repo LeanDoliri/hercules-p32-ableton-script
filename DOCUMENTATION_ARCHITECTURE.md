@@ -44,8 +44,13 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
 ### 3.1. Las Páginas de Pads
 *   **Deck Izquierdo (Clip Launcher Reducido):**
     *   Solo la página **SAMPLER** del deck izquierdo funciona como lanzador de clips (4 pistas x 4 escenas).
-*   **Deck Derecho (Finger Drumming Puro):**
-    *   `[100% LIBRE]` Absolutamente TODOS los pads del deck derecho (en las páginas Sampler, Slicer, Loop y Hotcue) están desvinculados de Ableton. Sus luces se apagan y solo envían notas MIDI crudas, ideales para tocar un *Drum Rack*.
+*   **Deck Derecho (Escala Cromática Continua de 64 Notas / Finger Drumming):**
+    *   `[100% LIBRE]` En el Modo 2, los pads del deck derecho a través de sus 4 páginas forman una escala cromática continua ascendente de 64 notas:
+        *   **Página SAMPLER:** Notas 36 a 51 (C1 a D#2). El pad inferior izquierdo es exactamente **C1** (Nota 36).
+        *   **Página SLICER:** Notas 52 a 67 (E2 a G3).
+        *   **Página LOOP:** Notas 68 a 83 (G#3 a B4).
+        *   **Página HOTCUE:** Notas 84 a 99 (C5 a D#6).
+    *   Ideal para tocar instrumentos cromáticos (pianos, sintetizadores) o recorrer las 4 páginas de un *Drum Rack* completo de 64 pads.
 
 ### 3.2. Knobs Superiores (Envíos y Retornos)
 *   **Deck Izquierdo (Envíos de la Pista Seleccionada):**
