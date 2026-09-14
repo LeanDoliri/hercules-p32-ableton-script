@@ -83,13 +83,19 @@ class hercules_p32_dj(ControlSurface):
             self._set_active_mode()
             self._set_track_select_led()
             
-            # Swallow all pad page selector buttons (HOTCUE, LOOP, SLICER, SAMPLER) on both decks
+            # Swallow all unused utility / pad page selector buttons (0..35) across channels 0..5
+            known_buttons = {
+                (0, 1), (0, 2), (0, 3),
+                (1, 7), (1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (1, 15),
+                (2, 8), (2, 9), (2, 10), (2, 11), (2, 12), (2, 15),
+            }
             self._swallowed_mode_buttons = []
-            for ch in [1, 2]:
-                for note in range(1, 7):
-                    btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, ch, note)
-                    btn.add_value_listener(lambda value: None, identify_sender=False)
-                    self._swallowed_mode_buttons.append(btn)
+            for ch in range(6):
+                for note in range(36):
+                    if (ch, note) not in known_buttons:
+                        btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, ch, note)
+                        btn.add_value_listener(lambda value: None, identify_sender=False)
+                        self._swallowed_mode_buttons.append(btn)
 
             self.show_message('Hercules P32 DJ Ready')
         return
@@ -150,6 +156,7 @@ class hercules_p32_dj(ControlSurface):
         self.refresh_state()
         self._mode2_devices()
         self.add_device_listeners()
+        self.request_rebuild_midi_map()
         self.mode_2_to_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 1)
         self.mode_2_to_1.add_value_listener(self._activate_mode1, identify_sender=False)
         return
@@ -412,6 +419,7 @@ class hercules_p32_dj(ControlSurface):
         self._mode1_devices()
         self.add_device_listeners()
         self._setup_loop_controls()
+        self.request_rebuild_midi_map()
         self.mode_1_to_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 1)
         self.mode_1_to_2.add_value_listener(self._activate_mode2, identify_sender=False)
         return
@@ -462,60 +470,37 @@ class hercules_p32_dj(ControlSurface):
         self.mixer.channel_strip(5).set_mute_button(None)
         self.mixer.channel_strip(6).set_mute_button(None)
 
-        if hasattr(self, 'arm_specific_4') and self.arm_specific_4 is not None:
-            self.arm_specific_4.disconnect()
-            self.arm_specific_4 = None
-        if hasattr(self, 'arm_specific_5') and self.arm_specific_5 is not None:
-            self.arm_specific_5.disconnect()
-            self.arm_specific_5 = None
-        if hasattr(self, 'arm_specific_6') and self.arm_specific_6 is not None:
-            self.arm_specific_6.disconnect()
-            self.arm_specific_6 = None
-            
-        if hasattr(self, 'solo_specific_4') and self.solo_specific_4 is not None:
-            self.solo_specific_4.disconnect()
-            self.solo_specific_4 = None
-        if hasattr(self, 'solo_specific_5') and self.solo_specific_5 is not None:
-            self.solo_specific_5.disconnect()
-            self.solo_specific_5 = None
-        if hasattr(self, 'solo_specific_6') and self.solo_specific_6 is not None:
-            self.solo_specific_6.disconnect()
-            self.solo_specific_6 = None
-            
-        if hasattr(self, 'mute_specific_4') and self.mute_specific_4 is not None:
-            self.mute_specific_4.disconnect()
-            self.mute_specific_4 = None
-        if hasattr(self, 'mute_specific_5') and self.mute_specific_5 is not None:
-            self.mute_specific_5.disconnect()
-            self.mute_specific_5 = None
-        if hasattr(self, 'mute_specific_6') and self.mute_specific_6 is not None:
-            self.mute_specific_6.disconnect()
-            self.mute_specific_6 = None
-            
-        if hasattr(self, 'trackselect7') and self.trackselect7 is not None:
-            try:
-                self.trackselect7.send_value(0)
-                self.trackselect7.remove_value_listener(self.track_select_7)
-            except Exception:
-                pass
-            self.trackselect7.disconnect()
-            self.trackselect7 = None
-        if hasattr(self, 'trackselect6') and self.trackselect6 is not None:
-            try:
-                self.trackselect6.send_value(0)
-                self.trackselect6.remove_value_listener(self.track_select_6)
-            except Exception:
-                pass
-            self.trackselect6.disconnect()
-            self.trackselect6 = None
-        if hasattr(self, 'trackselect5') and self.trackselect5 is not None:
-            try:
-                self.trackselect5.send_value(0)
-                self.trackselect5.remove_value_listener(self.track_select_5)
-            except Exception:
-                pass
-            self.trackselect5.disconnect()
-            self.trackselect5 = None
+        for btn_name in ['arm_specific_4', 'arm_specific_5', 'arm_specific_6',
+                         'solo_specific_4', 'solo_specific_5', 'solo_specific_6',
+                         'mute_specific_4', 'mute_specific_5', 'mute_specific_6']:
+            if hasattr(self, btn_name):
+                btn = getattr(self, btn_name)
+                if btn is not None:
+                    try:
+                        btn.send_value(0)
+                        btn.set_enabled(False)
+                        btn.suppress_script_forwarding = False
+                        btn.disconnect()
+                    except Exception:
+                        pass
+                    setattr(self, btn_name, None)
+
+        for ts_name, listener in [('trackselect7', self.track_select_7),
+                                  ('trackselect6', self.track_select_6),
+                                  ('trackselect5', self.track_select_5)]:
+            if hasattr(self, ts_name):
+                btn = getattr(self, ts_name)
+                if btn is not None:
+                    try:
+                        btn.send_value(0)
+                        btn.remove_value_listener(listener)
+                        btn.set_enabled(False)
+                        btn.suppress_script_forwarding = False
+                        btn.disconnect()
+                    except Exception:
+                        pass
+                    setattr(self, ts_name, None)
+
         self._session._unlink()
         self._session = None
         self.mode_1_to_2.remove_value_listener(self._activate_mode2)
