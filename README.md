@@ -26,6 +26,8 @@ Para garantizar la estabilidad y el correcto funcionamiento de las funciones ava
 
 **Sugerencia:** Se recomienda crear un proyecto vacío con 7 pistas y 3 retornos y guardarlo como plantilla predeterminada (`Archivo -> Guardar Live Set como predeterminado`).
 
+**Mapa MIDI interactivo:** [leandoliri.github.io/hercules-p32-ableton-script](https://leandoliri.github.io/hercules-p32-ableton-script/) muestra el panel del P32 con el mensaje que manda cada control y qué hace el script en Modo 1 y Modo 2, por página de pads y con SHIFT. El código está en `docs/index.html` (una sola página, sin build).
+
 **Documentación adicional:** el manual completo está en [DOCUMENTATION.md](DOCUMENTATION.md) y el detalle de mapeos y pendientes en [DOCUMENTATION_ARCHITECTURE.md](DOCUMENTATION_ARCHITECTURE.md). En `docs/` están la guía original de Remotify en PDF (EN/FR) y sus páginas como imágenes (`docs/images/page_1.png` a `page_7.png`, con el diagrama del panel del controlador); esa guía describe el script base, no las modificaciones de este repo.
 
 ---

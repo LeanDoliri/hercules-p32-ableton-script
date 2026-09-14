@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MIDI Remote Script para el controlador **Hercules P32 DJ** en Ableton Live. Usa el framework legacy `_Framework` de Live (no `ableton.v2`). El código nació de un mapeo generado con Remotify para Live 9 (`docs/Remotify_Source/hercules_p32_dj.json`), fue decompilado con uncompyle6 y desde entonces se edita a mano. Toda la documentación y los comentarios van en español; los mensajes de commit siguen en inglés con prefijo `feat:` / `fix:` / `docs:`.
 
-Código: `src/Hercules_P32_DJ/` (tres archivos). Docs: `README.md` (instalación), `DOCUMENTATION.md` (manual de usuario), `DOCUMENTATION_ARCHITECTURE.md` (fuente de verdad de mapeos y pendientes), `CHANGELOG.md` (resumen de modificaciones, sin versiones).
+Código: `src/Hercules_P32_DJ/` (tres archivos). Docs: `README.md` (instalación), `DOCUMENTATION.md` (manual de usuario), `DOCUMENTATION_ARCHITECTURE.md` (fuente de verdad de mapeos y pendientes), `CHANGELOG.md` (resumen de modificaciones, sin versiones). `docs/index.html` es el mapa MIDI interactivo publicado en GitHub Pages (rama `master`, carpeta `/docs`); es una página autocontenida con los mapeos escritos a mano en su JS, así que **al cambiar un mapeo en el script hay que actualizarla también**.
 
 ## Comandos y flujo de trabajo
 

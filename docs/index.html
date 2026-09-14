@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Mapa MIDI interactivo del Hercules P32 DJ con el script de Ableton Live: mensaje y funcion de cada control en Modo 1 y Modo 2.">
+<title>Mapa MIDI Hercules P32</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --ground:#1a1c20; --panel:#24272d; --panel-2:#2c3037; --line:#3a3f48; --line-soft:#30343b;
+    --ink:#ece9e2; --ink-2:#b6b9bf; --muted:#7f848d;
+    --red:#e23b32; --red-soft:#5a2724;
+    --led-purple:#a26bff; --led-purple-dim:#5a3f8f; --led-blue:#3f8cff; --led-blue-dim:#2c4f8a;
+    --led-red:#ff4b45; --led-red-dim:#7a2b28; --led-off:#15171a;
+    --free:#3aa675; --cap:#4a4f58;
+    --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+    --body:"IBM Plex Sans","Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:"IBM Plex Mono","Consolas","Menlo",monospace;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html{background:var(--ground)}
+  body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45;padding:0 16px;padding-block:20px 48px}
+  a{color:var(--ink-2)}
+  .wrap{max-width:1240px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;margin-bottom:18px}
+  h1{font-family:var(--display);font-weight:700;font-size:38px;line-height:1;margin:0;letter-spacing:.5px;text-transform:uppercase}
+  h1 small{display:block;font-family:var(--body);font-weight:400;font-size:13px;color:var(--muted);text-transform:none;letter-spacing:0;margin-top:6px}
+  .toolbar{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+  .group{display:flex;align-items:center;gap:8px}
+  .group .lbl{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted)}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--panel)}
+  .seg button{background:transparent;border:0;color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.8px;text-transform:uppercase;padding:7px 12px;cursor:pointer}
+  .seg button+button{border-left:1px solid var(--line)}
+  .seg button[aria-pressed="true"]{background:var(--red);color:#fff}
+  .seg button:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+  .toggle{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:6px 12px;color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:14px;letter-spacing:.8px;text-transform:uppercase;cursor:pointer}
+  .toggle[aria-pressed="true"]{border-color:var(--red);color:#fff;background:var(--red-soft)}
+  .toggle .dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+  .toggle[aria-pressed="true"] .dot{background:var(--red);box-shadow:0 0 6px var(--red)}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+  @media (max-width:1000px){.layout{grid-template-columns:1fr}}
+
+  /* ----- controlador ----- */
+  .unit{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;overflow-x:auto}
+  .unit-inner{display:grid;grid-template-columns:1fr 168px 1fr;gap:14px;min-width:760px}
+  .deck{display:grid;gap:10px;align-content:start}
+  .row{display:grid;gap:8px}
+  .row.top{grid-template-columns:1fr 1fr;align-items:center}
+  .row.knobs{grid-template-columns:repeat(4,1fr)}
+  .row.pads{grid-template-columns:repeat(4,1fr) 22px;gap:6px}
+  .deck.b .row.pads{grid-template-columns:22px repeat(4,1fr)}
+  .row.bottom{grid-template-columns:repeat(4,1fr)}
+  .center{display:grid;gap:8px;align-content:start}
+  .center .r3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:center}
+  .center .r2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+
+  .ctl{position:relative;border:1px solid var(--line-soft);background:var(--panel-2);border-radius:7px;color:var(--ink-2);font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:.6px;text-transform:uppercase;text-align:center;cursor:pointer;user-select:none;transition:border-color .12s,box-shadow .12s;min-height:30px;display:flex;align-items:center;justify-content:center;padding:4px 6px}
+  .ctl:hover,.ctl:focus-visible{border-color:var(--ink-2);outline:none}
+  .ctl.pinned{border-color:var(--red);box-shadow:0 0 0 2px var(--red-soft)}
+  .ctl.knob{flex-direction:column;gap:5px;padding:8px 4px;min-height:74px}
+  .ctl.knob .cap{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#4a4f58,#1c1e22 70%);border:2px solid #4c515a;position:relative}
+  .ctl.knob .cap::after{content:"";position:absolute;left:50%;top:3px;width:2px;height:11px;background:var(--ink);transform:translateX(-50%)}
+  .ctl.knob.big .cap{width:52px;height:52px}
+  .ctl.knob.enc .cap{border-style:dashed}
+  .ctl.free{border-color:var(--free)}
+  .ctl.free .tag,.ctl.cap-tag .tag{position:absolute;top:-7px;right:6px;font-size:9px;letter-spacing:.8px;padding:1px 5px;border-radius:4px;background:var(--free);color:#0b1f16}
+  .ctl.cap-tag .tag{background:var(--cap);color:var(--ink-2)}
+  .ctl.red{background:var(--red-soft);border-color:#7a3530;color:#ffd9d6}
+  .ctl.fader{min-height:130px;flex-direction:column;justify-content:flex-start;gap:6px;padding-top:8px}
+  .ctl.fader .track{width:6px;flex:1;background:#121417;border-radius:3px;position:relative}
+  .ctl.fader .track::after{content:"";position:absolute;left:-9px;top:45%;width:24px;height:12px;background:#4c515a;border-radius:2px}
+  .ctl.xfader{min-height:38px}
+  .ctl.xfader .track{height:6px;width:70%;background:#121417;border-radius:3px;position:relative}
+  .ctl.xfader .track::after{content:"";position:absolute;top:-6px;left:48%;width:12px;height:18px;background:#4c515a;border-radius:2px}
+  .selectors{display:grid;grid-template-rows:repeat(4,1fr);gap:6px}
+  .selectors .ctl{writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;letter-spacing:1px;padding:4px 2px;min-height:0}
+  .padgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;grid-column:span 4}
+  .pad{aspect-ratio:1/1;min-height:0;border-radius:6px;background:var(--led-off);border:1px solid #2a2d33;position:relative;font-family:var(--mono);font-size:10px;text-transform:none;letter-spacing:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+  .pad .n{font-size:11px;color:var(--ink-2)}
+  .pad .f{font-family:var(--display);font-weight:600;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink);opacity:.9;text-align:center;line-height:1.05;padding:0 2px}
+  .pad[data-led="purple"]{background:var(--led-purple-dim);border-color:var(--led-purple)}
+  .pad[data-led="purple-bright"]{background:var(--led-purple);border-color:#c9a8ff}
+  .pad[data-led="blue"]{background:var(--led-blue-dim);border-color:var(--led-blue)}
+  .pad[data-led="blue-bright"]{background:var(--led-blue);border-color:#8fbcff}
+  .pad[data-led="red"]{background:var(--led-red-dim);border-color:var(--led-red)}
+  .pad[data-led="off"] .f{color:var(--muted)}
+  .pad:hover,.pad:focus-visible{outline:2px solid var(--ink-2);outline-offset:1px}
+  .pad.pinned{outline:2px solid var(--red);outline-offset:1px}
+  .deckname{font-family:var(--display);font-weight:700;font-size:13px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:baseline}
+  .deckname .ch{font-family:var(--mono);font-size:11px;letter-spacing:0;text-transform:none}
+  .pagehint{font-family:var(--mono);font-size:11px;color:var(--muted);grid-column:1/-1;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .pagehint b{color:var(--ink-2);font-weight:500}
+
+  /* ----- detalle ----- */
+  .detail{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;position:sticky;top:14px;min-height:300px}
+  .detail .eyebrow{font-family:var(--display);font-weight:600;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:var(--muted)}
+  .detail h2{font-family:var(--display);font-weight:700;font-size:26px;line-height:1.05;margin:4px 0 2px;text-wrap:balance}
+  .detail .where{color:var(--muted);font-size:12.5px;margin-bottom:12px}
+  .midi{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-family:var(--mono);font-size:12.5px;background:var(--ground);border:1px solid var(--line-soft);border-radius:8px;padding:10px 12px;margin-bottom:12px}
+  .midi .k{color:var(--muted)}
+  .midi .v{color:var(--ink);font-variant-numeric:tabular-nums}
+  .modes{display:grid;gap:8px}
+  .mode{border:1px solid var(--line-soft);border-radius:8px;padding:9px 11px}
+  .mode.active{border-color:var(--red)}
+  .mode .mh{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+  .mode.active .mh{color:#ffb3ae}
+  .mode .mt{margin-top:3px;font-size:13.5px}
+  .mode .mt.free{color:#8fe0b8}
+  .mode .mt.capd{color:var(--muted)}
+  .led{margin-top:10px;font-size:12.5px;color:var(--ink-2)}
+  .led .sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px;border:1px solid rgba(255,255,255,.15)}
+  .empty{color:var(--muted);font-size:13px}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:14px;font-size:12px;color:var(--ink-2)}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{display:inline-block;width:14px;height:10px;border-radius:3px;border:1px solid var(--line)}
+
+  /* ----- tabla ----- */
+  section.table{margin-top:22px}
+  section.table h3{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.6px;text-transform:uppercase;margin:0 0 8px}
+  .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  table{border-collapse:collapse;width:100%;min-width:720px;font-size:13px}
+  th{font-family:var(--display);font-weight:600;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--line)}
+  td{padding:8px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  td.m{font-family:var(--mono);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  td .free{color:#8fe0b8}
+  td .capd{color:var(--muted)}
+  .note{margin-top:14px;font-size:12.5px;color:var(--muted);max-width:70ch}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Mapa MIDI Hercules P32<small>Qué manda cada control y qué hace el script de Ableton con eso. Pasá el cursor o tocá un control; clic para fijarlo.</small></h1>
+    <div class="toolbar">
+      <div class="group"><span class="lbl">Modo</span>
+        <div class="seg" role="group" aria-label="Modo">
+          <button id="mode1" type="button" aria-pressed="true">Modo 1</button>
+          <button id="mode2" type="button" aria-pressed="false">Modo 2</button>
+        </div>
+      </div>
+      <div class="group"><span class="lbl">Página de pads</span>
+        <div class="seg" role="group" aria-label="Página de pads">
+          <button id="pgSAMPLER" type="button" aria-pressed="true">Sampler</button>
+          <button id="pgSLICER" type="button" aria-pressed="false">Slicer</button>
+          <button id="pgLOOP" type="button" aria-pressed="false">Loop</button>
+          <button id="pgHOTCUE" type="button" aria-pressed="false">Hotcue</button>
+        </div>
+      </div>
+      <button id="shiftB" class="toggle" type="button" aria-pressed="false"><span class="dot"></span>Shift derecho apretado</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div>
+      <div class="unit"><div class="unit-inner" id="unit"></div>
+        <div class="legend">
+          <span><i style="background:var(--led-purple-dim);border-color:var(--led-purple)"></i>violeta</span>
+          <span><i style="background:var(--led-blue-dim);border-color:var(--led-blue)"></i>azul</span>
+          <span><i style="background:var(--led-red-dim);border-color:var(--led-red)"></i>rojo</span>
+          <span><i style="background:var(--led-off)"></i>apagado / capturado</span>
+          <span><i style="border-color:var(--free);background:transparent"></i>libre para Ctrl+M</span>
+        </div>
+      </div>
+    </div>
+    <aside class="detail" id="detail"><p class="empty">Pasá el cursor por un control del panel.</p></aside>
+  </div>
+
+  <section class="table">
+    <h3>Todos los mensajes que el script usa</h3>
+    <div class="tblwrap"><table id="tbl"><thead><tr><th>Control</th><th>Mensaje</th><th>Modo 1</th><th>Modo 2</th></tr></thead><tbody></tbody></table></div>
+    <p class="note">Los canales se muestran como los ve Ableton en el modo de mapeo (Ctrl+M): 1 a 16. Entre paréntesis, el número que usa el código del script (0 a 15). Toda nota que no figure en este mapa la captura el script y no llega a ninguna pista; los CC no mapeados quedan libres para asignar a mano.</p>
+  </section>
+</div>
+
+<script>
+(function(){
+  const NOTE_NAMES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+  const noteName=n=>NOTE_NAMES[n%12]+(Math.floor(n/12)-2);
+  const CH={G:0,A:1,B:2,SA:4,SB:5};
+  const chLabel=c=>`Canal ${c+1} (ch ${c})`;
+
+  // ---------- controles fijos ----------
+  // functions: {m1:{t,kind}, m2:{t,kind}} kind: 'map' | 'free' | 'cap'
+  const F=(t,kind='map')=>({t,kind});
+  const CAP=F('Capturado: no hace nada, no llega a la pista','cap');
+  const FREE=F('Libre: sin mapear, asignable con Ctrl+M','free');
+
+  const controls=[];
+  function add(c){controls.push(c);return c;}
+
+  // Centro (canal 1 / ch 0)
+  add({id:'browse',name:'BROWSE (presionar)',where:'Encoder central',midi:{type:'Nota',ch:CH.G,num:1},m1:F('Cambia a Modo 2'),m2:F('Vuelve a Modo 1')});
+  add({id:'browse_turn',name:'BROWSE (girar)',where:'Encoder central',midi:{type:'CC',ch:CH.G,num:'?'},m1:FREE,m2:FREE,unknown:true});
+  add({id:'rec',name:'REC',where:'Centro',midi:{type:'Nota',ch:CH.G,num:2},m1:F('Grabar (Record de Live)'),m2:F('Grabar (Record de Live)')});
+  add({id:'slip',name:'SLIP',where:'Centro',midi:{type:'Nota',ch:CH.G,num:3},m1:F('Overdub MIDI'),m2:F('Overdub MIDI')});
+  add({id:'xfader',name:'Crossfader',where:'Centro, abajo',midi:{type:'CC',ch:CH.G,num:1},m1:F('Crossfader de Live'),m2:F('Crossfader de Live')});
+  add({id:'loadA',name:'LOAD A',where:'Centro, arriba a la izquierda',midi:{type:'Nota',ch:CH.A,num:15},m1:F('Seleccionar pista anterior (desplaza el banco si hace falta)'),m2:F('Seleccionar pista anterior')});
+  add({id:'loadB',name:'LOAD B',where:'Centro, arriba a la derecha',midi:{type:'Nota',ch:CH.B,num:15},m1:F('Seleccionar pista siguiente (desplaza el banco si hace falta)'),m2:F('Seleccionar pista siguiente')});
+  add({id:'vol_minus',name:'VOL −',where:'Centro (auriculares)',midi:{type:'?',ch:CH.G,num:'?'},m1:FREE,m2:FREE,unknown:true});
+  add({id:'vol_plus',name:'VOL +',where:'Centro (auriculares)',midi:{type:'?',ch:CH.G,num:'?'},m1:FREE,m2:FREE,unknown:true});
+  add({id:'faderA',name:'Fader central izquierdo',where:'Centro',midi:{type:'CC',ch:CH.G,num:'?'},m1:FREE,m2:FREE,unknown:true});
+  add({id:'faderB',name:'Fader central derecho',where:'Centro',midi:{type:'CC',ch:CH.G,num:'?'},m1:FREE,m2:FREE,unknown:true});
+
+  for(const [deck,ch,side] of [['A',CH.A,'Deck izquierdo'],['B',CH.B,'Deck derecho']]){
+    const isA=deck==='A';
+    add({id:'filter'+deck,name:'FILTER '+deck,where:side+', encoder grande',midi:{type:'CC',ch,num:1},
+      m1:F(isA?'Macro 4 del primer dispositivo de la pista seleccionada':'Macro 8 del primer dispositivo de la pista seleccionada'),m2:FREE});
+    add({id:'high'+deck,name:'HIGH '+deck,where:side+', EQ central',midi:{type:'CC',ch,num:4},m1:FREE,m2:FREE});
+    add({id:'mid'+deck,name:'MID '+deck,where:side+', EQ central',midi:{type:'CC',ch,num:3},m1:FREE,m2:FREE});
+    add({id:'low'+deck,name:'LOW '+deck,where:side+', EQ central',midi:{type:'CC',ch,num:2},m1:FREE,m2:FREE});
+    const vol=isA?['pista 1','pista 2','pista 3','pista 4']:['pista 5','pista 6','pista 7','Master'];
+    [6,7,8,9].forEach((cc,i)=>add({id:'fx'+deck+i,name:(i<3?'FX AMOUNT '+(i+1):'DRY/WET')+' '+deck,where:side+', knob '+(i+1),midi:{type:'CC',ch,num:cc},
+      m1:F('Volumen de '+vol[i]+' del banco visible (tope 0 dB)'),m2:F('Volumen de '+vol[i]+' del banco visible (tope 0 dB)')}));
+    const stop=isA?['pista 1','pista 2','pista 3','pista 4']:['pista 5','pista 6','pista 7',null];
+    [3,4,5,6].forEach((n,i)=>{
+      const isMacro=i===3;
+      let m1,m2;
+      if(isA){m1=F('Stop Clip de la '+stop[i]);m2=F('Stop Clip de la '+stop[i]);}
+      else if(isMacro){m1=F('Stop All Clips');m2=F('Stop All Clips');}
+      else{m1=F('Stop Clip de la '+stop[i]);m2=CAP;}
+      add({id:'on'+deck+i,name:(isMacro?'MACRO':'ON')+' '+deck+(isMacro?'':' '+(i+1)),where:side+', botón bajo el knob '+(i+1),midi:{type:'Nota',ch,num:n},m1,m2});
+    });
+    add({id:'loopenc'+deck,name:'LOOP/TEMPO '+deck+' (girar)',where:side+', encoder SIZE/ADJUST',midi:{type:'CC',ch,num:10},
+      m1:isA?F('Tempo ±1 BPM (con SHIFT: ±0,1 BPM, llega por canal 5)'):FREE,m2:isA?F('Tempo ±1 BPM (con SHIFT: ±0,1 BPM)'):FREE});
+    add({id:'loopencp'+deck,name:'LOOP/TEMPO '+deck+' (presionar)',where:side+', encoder SIZE/ADJUST',midi:{type:'Nota',ch,num:1},
+      m1:isA?F('Metrónomo on/off'):CAP,m2:isA?F('Metrónomo on/off'):CAP});
+    [['HOTCUE',11],['LOOP',12],['SLICER',13],['SAMPLER',14]].forEach(([p,n])=>add({id:'sel'+deck+p,name:'Selector '+p+' '+deck,where:side+', botón de página',midi:{type:'Nota',ch,num:n},
+      m1:F('Cambia la página de pads en el hardware. El script lo captura: no llega a ninguna pista','cap'),m2:F('Cambia la página de pads en el hardware. El script lo captura','cap')}));
+    add({id:'shift'+deck,name:'SHIFT '+deck,where:side+', abajo',midi:{type:'Nota',ch,num:7},
+      m1:isA?F('Alterna vista Session / Arrangement. También es modificador de hardware (tempo fino)'):F('Mientras está apretado, ilumina los 4 pads de navegación en azul'),
+      m2:isA?F('Alterna vista Session / Arrangement'):F('Mientras está apretado, ilumina los 4 pads de navegación en azul')});
+    add({id:'sync'+deck,name:'SYNC '+deck,where:side+', abajo',midi:{type:'Nota',ch,num:8},m1:isA?F('Rehacer (Redo)'):F('Tap Tempo'),m2:isA?F('Rehacer (Redo)'):F('Tap Tempo')});
+    add({id:'cue'+deck,name:'CUE '+deck,where:side+', abajo',midi:{type:'Nota',ch,num:9},m1:isA?F('Deshacer (Undo)'):F('Stop del transporte'),m2:isA?F('Deshacer (Undo)'):F('Stop del transporte')});
+    add({id:'play'+deck,name:'PLAY '+deck,where:side+', abajo',midi:{type:'Nota',ch,num:10},m1:isA?F('Poner / quitar marcador (Locator)'):F('Play del transporte'),m2:isA?F('Poner / quitar marcador (Locator)'):F('Play del transporte')});
+  }
+  const byId=Object.fromEntries(controls.map(c=>[c.id,c]));
+
+  // ---------- pads ----------
+  const PAGE_BASE={SAMPLER:36,SLICER:52,LOOP:68,HOTCUE:84};
+  // fila 0 = superior. nota = base + (3-row)*4 + col
+  const padNote=(page,row,col)=>PAGE_BASE[page]+(3-row)*4+col;
+  const NAV={45:'Banco arriba',40:'Banco izquierda',42:'Banco derecha',37:'Banco abajo'};
+  const isBlack=n=>[1,3,6,8,10].includes(n%12);
+  function keyboard(n){
+    const pc=n%12;
+    const led=pc===0?'red':(isBlack(n)?'blue':'purple');
+    return {t:'Nota '+noteName(n)+' hacia la pista armada (teclado cromático). Al presionar sube de brillo',kind:'map',led,short:noteName(n)};
+  }
+  function padInfo(deck,page,row,col,mode,shiftB){
+    const n=padNote(page,row,col);
+    const isA=deck==='A';
+    if(!isA&&shiftB){
+      if(page==='SAMPLER'&&NAV[n]) return {t:NAV[n]+' de la matriz de clips (SHIFT + pad). Azul tenue con SHIFT, azul pleno al presionar',kind:'map',led:'blue',short:NAV[n].replace('Banco ','')};
+      return {t:'Con SHIFT: capturado, no hace nada',kind:'cap',led:'off',short:''};
+    }
+    if(!isA&&mode===2) return keyboard(n);
+    if(page==='SAMPLER'){
+      if(mode===1){
+        if(isA) return {t:'Lanzar clip: pista '+(col+1)+', escena '+(row+1)+' del banco visible',kind:'map',led:'purple',short:'P'+(col+1)+' E'+(row+1)};
+        if(col<3) return {t:'Lanzar clip: pista '+(col+5)+', escena '+(row+1)+' del banco visible',kind:'map',led:'purple',short:'P'+(col+5)+' E'+(row+1)};
+        return {t:'Lanzar escena '+(row+1)+' completa (Scene Launch)',kind:'map',led:'purple-bright',short:'Esc '+(row+1)};
+      }
+      return {t:'Lanzar clip: pista '+(col+1)+', escena '+(row+1)+' (grilla 4x4)',kind:'map',led:'purple',short:'P'+(col+1)+' E'+(row+1)};
+    }
+    if(page==='SLICER'){
+      const rows=[['Seleccionar','purple'],['Mute / Unmute','purple-bright'],['Solo','blue'],['Armar grabación','red']];
+      const track=isA?col+1:col+5;
+      if(!isA&&col===3) return {t:'Sin función (la matriz es de 7 pistas). Capturado',kind:'cap',led:'off',short:''};
+      if(!isA&&mode===2) return keyboard(n);
+      return {t:rows[row][0]+' pista '+track+' del banco visible',kind:'map',led:rows[row][1],short:rows[row][0].split(' ')[0]+' '+track};
+    }
+    if(page==='LOOP'){
+      if(mode===2) return isA?{t:'Capturado en Modo 2: no hace nada',kind:'cap',led:'off',short:''}:keyboard(n);
+      const rows=[['Loop on/off','red'],['Loop ÷2','purple'],['Loop ×2','purple'],['Beatjump adelante','blue']];
+      const track=isA?col+1:col+5;
+      return {t:rows[row][0]+' del clip sonando en la pista '+track+(track===8?' (fuera del banco de 7)':''),kind:'map',led:rows[row][1],short:rows[row][0].replace('Beatjump adelante','Jump')+' '+track};
+    }
+    // HOTCUE
+    if(!isA&&mode===2) return keyboard(n);
+    return {t:'Capturado: no hace nada, no llega a la pista',kind:'cap',led:'off',short:''};
+  }
+
+  // ---------- estado ----------
+  const state={mode:1,page:'SAMPLER',shiftB:false,pinned:null};
+
+  // ---------- render del panel ----------
+  const unit=document.getElementById('unit');
+  const el=(tag,cls,html)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;};
+  function ctl(id,label,cls){
+    const c=byId[id];const e=el('button','ctl '+(cls||''),label);e.type='button';e.dataset.id=id;
+    const kind=(state.mode===1?c.m1:c.m2).kind;
+    if(kind==='free'){e.classList.add('free');e.appendChild(el('span','tag','libre'));}
+    if(kind==='cap'){e.classList.add('cap-tag');e.appendChild(el('span','tag','cap.'));}
+    return e;
+  }
+  function knob(id,label,extra){const e=ctl(id,'','knob '+(extra||''));e.prepend(el('span','cap'));e.appendChild(el('span','',label));return e;}
+  function deckBlock(deck){
+    const d=el('div','deck '+deck.toLowerCase());const ch=deck==='A'?CH.A:CH.B;
+    d.appendChild(el('div','deckname',`<span>Deck ${deck} · ${deck==='A'?'izquierdo':'derecho'}</span><span class="ch">${chLabel(ch)}</span>`));
+    const top=el('div','row top');
+    if(deck==='A'){top.appendChild(knob('loopenc'+deck,'LOOP/TEMPO','enc'));top.appendChild(knob('filter'+deck,'FILTER','big'));}
+    else{top.appendChild(knob('filter'+deck,'FILTER','big'));top.appendChild(knob('loopenc'+deck,'LOOP/TEMPO','enc'));}
+    d.appendChild(top);
+    const kn=el('div','row knobs');[0,1,2,3].forEach(i=>kn.appendChild(knob('fx'+deck+i,i<3?'FX '+(i+1):'DRY/WET')));d.appendChild(kn);
+    const on=el('div','row knobs');[0,1,2,3].forEach(i=>on.appendChild(ctl('on'+deck+i,i<3?'ON':'MACRO')));d.appendChild(on);
+    const pads=el('div','row pads');
+    const sel=el('div','selectors');['HOTCUE','LOOP','SLICER','SAMPLER'].forEach(p=>{const b=ctl('sel'+deck+p,p);if(p===state.page)b.style.borderColor='var(--ink-2)';sel.appendChild(b);});
+    const grid=el('div','padgrid');
+    for(let row=0;row<4;row++)for(let col=0;col<4;col++){
+      const n=padNote(state.page,row,col);const info=padInfo(deck,state.page,row,col,state.mode,state.shiftB);
+      const p=el('button','ctl pad');p.type='button';p.dataset.pad=`${deck}:${row}:${col}`;p.dataset.led=info.led;
+      p.appendChild(el('span','n',String(n)));p.appendChild(el('span','f',info.short||''));grid.appendChild(p);
+    }
+    if(deck==='A'){pads.appendChild(grid);pads.appendChild(sel);}else{pads.appendChild(sel);pads.appendChild(grid);}
+    const hint=el('div','pagehint',`<span>Página <b>${state.page}</b>: notas <b>${PAGE_BASE[state.page]}–${PAGE_BASE[state.page]+15}</b> (${noteName(PAGE_BASE[state.page])} a ${noteName(PAGE_BASE[state.page]+15)})</span><span>fila inferior = notas más bajas</span>`);
+    pads.appendChild(hint);d.appendChild(pads);
+    const bt=el('div','row bottom');bt.appendChild(ctl('shift'+deck,'SHIFT','red'));bt.appendChild(ctl('sync'+deck,'SYNC'));bt.appendChild(ctl('cue'+deck,'CUE','red'));bt.appendChild(ctl('play'+deck,'PLAY'));d.appendChild(bt);
+    return d;
+  }
+  function centerBlock(){
+    const c=el('div','center');
+    c.appendChild(el('div','deckname',`<span>Centro</span><span class="ch">${chLabel(CH.G)}</span>`));
+    const r=el('div','r3');r.appendChild(ctl('loadA','LOAD A'));r.appendChild(knob('browse','BROWSE','enc'));r.appendChild(ctl('loadB','LOAD B'));c.appendChild(r);
+    const r2=el('div','r3');r2.appendChild(knob('highA','HIGH'));r2.appendChild(ctl('rec','REC','red'));r2.appendChild(knob('highB','HIGH'));c.appendChild(r2);
+    const r3=el('div','r3');r3.appendChild(knob('midA','MID'));r3.appendChild(ctl('slip','SLIP'));r3.appendChild(knob('midB','MID'));c.appendChild(r3);
+    const r4=el('div','r3');r4.appendChild(knob('lowA','LOW'));r4.appendChild(el('span'));r4.appendChild(knob('lowB','LOW'));c.appendChild(r4);
+    const r5=el('div','r2');r5.appendChild(ctl('vol_minus','VOL −'));r5.appendChild(ctl('vol_plus','VOL +'));c.appendChild(r5);
+    const r6=el('div','r2');const fa=ctl('faderA','','fader');fa.appendChild(el('span','track'));const fb=ctl('faderB','','fader');fb.appendChild(el('span','track'));r6.appendChild(fa);r6.appendChild(fb);c.appendChild(r6);
+    const xf=ctl('xfader','','xfader');xf.appendChild(el('span','track'));c.appendChild(xf);
+    return c;
+  }
+  function render(){
+    unit.innerHTML='';unit.appendChild(deckBlock('A'));unit.appendChild(centerBlock());unit.appendChild(deckBlock('B'));
+    if(state.pinned)markPinned();
+    showDetail(state.pinned);
+  }
+  function markPinned(){
+    unit.querySelectorAll('.pinned').forEach(e=>e.classList.remove('pinned'));
+    if(!state.pinned)return;
+    const sel=state.pinned.pad?`[data-pad="${state.pinned.pad}"]`:`[data-id="${state.pinned.id}"]`;
+    const e=unit.querySelector(sel);if(e)e.classList.add('pinned');
+  }
+
+  // ---------- detalle ----------
+  const detail=document.getElementById('detail');
+  const LED_LABEL={purple:['violeta tenue','var(--led-purple-dim)'],'purple-bright':['violeta pleno','var(--led-purple)'],blue:['azul tenue','var(--led-blue-dim)'],'blue-bright':['azul pleno','var(--led-blue)'],red:['rojo tenue','var(--led-red-dim)'],off:['apagado','var(--led-off)']};
+  function modeBox(n,f,active){return `<div class="mode ${active?'active':''}"><div class="mh"><span>Modo ${n}</span>${active?'<span>activo</span>':''}</div><div class="mt ${f.kind==='free'?'free':f.kind==='cap'?'capd':''}">${f.t}</div></div>`;}
+  function midiRows(m){
+    const chTxt=typeof m.ch==='number'?chLabel(m.ch):m.ch;
+    const num=m.num==='?'?'no verificado':(m.type==='Nota'?`${m.num} (${noteName(m.num)})`:String(m.num));
+    return `<div class="k">Tipo</div><div class="v">${m.type==='?'?'no verificado':m.type}</div><div class="k">Canal</div><div class="v">${chTxt}</div><div class="k">${m.type==='CC'?'CC':'Número'}</div><div class="v">${num}</div>`;
+  }
+  function showDetail(target){
+    if(!target){detail.innerHTML='<p class="empty">Pasá el cursor por un control del panel. Clic para dejarlo fijo.</p>';return;}
+    if(target.pad){
+      const [deck,r,c]=target.pad.split(':');const row=+r,col=+c;const n=padNote(state.page,row,col);
+      const shifted=deck==='B'&&state.shiftB;
+      const ch=shifted?CH.SB:(deck==='A'?CH.A:CH.B);
+      const i1=padInfo(deck,state.page,row,col,1,shifted),i2=padInfo(deck,state.page,row,col,2,shifted);
+      const cur=state.mode===1?i1:i2;const led=LED_LABEL[cur.led]||LED_LABEL.off;
+      detail.innerHTML=`<div class="eyebrow">Pad · Deck ${deck} · página ${state.page}${shifted?' · con SHIFT':''}</div><h2>Fila ${4-row} (desde abajo), columna ${col+1}</h2><div class="where">${deck==='A'?'Deck izquierdo':'Deck derecho'}${shifted?' · capa SHIFT (canal 6)':''}</div>
+        <div class="midi">${midiRows({type:'Nota',ch,num:n})}</div>
+        <div class="modes">${modeBox(1,i1,state.mode===1)}${modeBox(2,i2,state.mode===2)}</div>
+        <div class="led"><span class="sw" style="background:${led[1]}"></span>Luz en el modo activo: ${led[0]}${cur.led!=='off'&&(deck==='B'&&state.mode===2)?' · sube de brillo al presionar':''}</div>`;
+      return;
+    }
+    const c=byId[target.id];
+    detail.innerHTML=`<div class="eyebrow">${c.midi.type==='CC'?'Knob / fader':'Botón'}</div><h2>${c.name}</h2><div class="where">${c.where}</div>
+      <div class="midi">${midiRows(c.midi)}</div>
+      <div class="modes">${modeBox(1,c.m1,state.mode===1)}${modeBox(2,c.m2,state.mode===2)}</div>
+      ${c.unknown?'<div class="led">Este control no está mapeado por el script y su mensaje no fue medido. Para verlo: Preferencias del script <code>DEBUG_LOG_MIDI = True</code> o Ctrl+M en Live.</div>':''}`;
+  }
+
+  // ---------- eventos ----------
+  function targetOf(e){const b=e.target.closest('.ctl');if(!b)return null;return b.dataset.pad?{pad:b.dataset.pad}:{id:b.dataset.id};}
+  unit.addEventListener('mouseover',e=>{const t=targetOf(e);if(t&&!state.pinned)showDetail(t);});
+  unit.addEventListener('focusin',e=>{const t=targetOf(e);if(t&&!state.pinned)showDetail(t);});
+  unit.addEventListener('mouseleave',()=>{if(!state.pinned)showDetail(null);});
+  unit.addEventListener('click',e=>{
+    const t=targetOf(e);if(!t)return;
+    const same=state.pinned&&JSON.stringify(state.pinned)===JSON.stringify(t);
+    state.pinned=same?null:t;markPinned();showDetail(state.pinned||t);
+  });
+  const seg=(ids,key,valueOf)=>ids.forEach(id=>document.getElementById(id).addEventListener('click',()=>{
+    state[key]=valueOf(id);ids.forEach(i=>document.getElementById(i).setAttribute('aria-pressed',String(i===id)));render();
+  }));
+  seg(['mode1','mode2'],'mode',id=>id==='mode1'?1:2);
+  seg(['pgSAMPLER','pgSLICER','pgLOOP','pgHOTCUE'],'page',id=>id.slice(2));
+  const sh=document.getElementById('shiftB');
+  sh.addEventListener('click',()=>{state.shiftB=!state.shiftB;sh.setAttribute('aria-pressed',String(state.shiftB));render();});
+
+  // ---------- tabla ----------
+  const tb=document.querySelector('#tbl tbody');
+  const fmtMidi=m=>{if(m.type==='?'||m.num==='?')return 'no verificado';return `${m.type} ${m.num}${m.type==='Nota'?' ('+noteName(m.num)+')':''} · ${chLabel(m.ch)}`;};
+  const fmtF=f=>`<span class="${f.kind==='free'?'free':f.kind==='cap'?'capd':''}">${f.t}</span>`;
+  const rows=controls.filter(c=>!c.unknown).map(c=>`<tr><td>${c.name}</td><td class="m">${fmtMidi(c.midi)}</td><td>${fmtF(c.m1)}</td><td>${fmtF(c.m2)}</td></tr>`);
+  rows.push(`<tr><td>Pads deck A, página SAMPLER</td><td class="m">Notas 36–51 · ${chLabel(CH.A)}</td><td>Clip launcher, pistas 1–4 × escenas 1–4</td><td>Clip launcher 4×4, pistas 1–4</td></tr>`);
+  rows.push(`<tr><td>Pads deck A, página SLICER</td><td class="m">Notas 52–67 · ${chLabel(CH.A)}</td><td>Seleccionar / Mute / Solo / Armar, pistas 1–4 (de arriba hacia abajo)</td><td>Igual que en Modo 1 (capa base)</td></tr>`);
+  rows.push(`<tr><td>Pads deck A, página LOOP</td><td class="m">Notas 68–83 · ${chLabel(CH.A)}</td><td>Loop on/off, ÷2, ×2, Beatjump por columna (pistas 1–4)</td><td><span class="capd">Capturados</span></td></tr>`);
+  rows.push(`<tr><td>Pads deck A, página HOTCUE</td><td class="m">Notas 84–99 · ${chLabel(CH.A)}</td><td><span class="capd">Capturados</span></td><td><span class="capd">Capturados</span></td></tr>`);
+  rows.push(`<tr><td>Pads deck B, página SAMPLER</td><td class="m">Notas 36–51 · ${chLabel(CH.B)}</td><td>Clip launcher pistas 5–7 (columnas 1–3) y Scene Launch (columna 4)</td><td>Teclado cromático C1–D#2, luces tipo piano</td></tr>`);
+  rows.push(`<tr><td>Pads deck B, página SLICER</td><td class="m">Notas 52–67 · ${chLabel(CH.B)}</td><td>Seleccionar / Mute / Solo / Armar, pistas 5–7</td><td>Teclado cromático E2–G3</td></tr>`);
+  rows.push(`<tr><td>Pads deck B, página LOOP</td><td class="m">Notas 68–83 · ${chLabel(CH.B)}</td><td>Loop on/off, ÷2, ×2, Beatjump por columna (pistas 5–8)</td><td>Teclado cromático G#3–B4</td></tr>`);
+  rows.push(`<tr><td>Pads deck B, página HOTCUE</td><td class="m">Notas 84–99 · ${chLabel(CH.B)}</td><td><span class="capd">Capturados</span></td><td>Teclado cromático C5–D#6</td></tr>`);
+  rows.push(`<tr><td>SHIFT derecho + pads (SAMPLER)</td><td class="m">Notas 45 / 40 / 42 / 37 · ${chLabel(CH.SB)}</td><td>Banco arriba / izquierda / derecha / abajo</td><td>Banco arriba / izquierda / derecha / abajo</td></tr>`);
+  rows.push(`<tr><td>SHIFT izquierdo + LOOP/TEMPO A (girar)</td><td class="m">CC 10 · ${chLabel(CH.SA)}</td><td>Tempo ±0,1 BPM</td><td>Tempo ±0,1 BPM</td></tr>`);
+  tb.innerHTML=rows.join('');
+
+  render();
+})();
+</script>
+</body>
+</html>
