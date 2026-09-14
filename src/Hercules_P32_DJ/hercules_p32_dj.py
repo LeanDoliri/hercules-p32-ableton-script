@@ -21,6 +21,12 @@ from .ConfigurableButtonElement import ConfigurableButtonElement
 CH_GLOBAL = 0
 CH_DECK_A = 1
 CH_DECK_B = 2
+CH_SHIFT_B = 5   # SHIFT derecho + pads del deck derecho
+
+# Pads de navegacion de banco (SHIFT derecho + pagina SAMPLER del deck derecho), en cruz
+NAV_NOTES = (45, 40, 42, 37)   # arriba, izquierda, derecha, abajo
+NAV_LED_DIM = 41               # azul tenue mientras SHIFT esta apretado
+NAV_LED_BRIGHT = 126           # azul pleno mientras el pad esta presionado
 
 # Rango de notas de los pads por pagina (ambos decks)
 PAD_SAMPLER = 36
@@ -140,6 +146,7 @@ class hercules_p32_dj(ControlSurface):
             # se hace en build_midi_map(): todo lo que no este en _passthrough_notes() se captura.
             self._swallowed_notes = set()
             self._reported_notes = set()
+            self._right_shift_held = False
 
             self.show_message('Hercules P32 DJ Ready')
         return
@@ -783,6 +790,9 @@ class hercules_p32_dj(ControlSurface):
         self.transport.set_overdub_button(overdub_button)
         self.trackleft = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 15)
         self.trackleft.add_value_listener(self._trackleft_track_nav, identify_sender=False)
+        # SHIFT derecho: mientras esta apretado ilumina los pads de navegacion
+        self.right_shift_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_B, 7)
+        self.right_shift_btn.add_value_listener(self._on_right_shift, identify_sender=False)
         self.trackright = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 15)
         self.trackright.add_value_listener(self._trackright_track_nav, identify_sender=False)
         return
@@ -836,6 +846,9 @@ class hercules_p32_dj(ControlSurface):
         self.trackleft.remove_value_listener(self._trackleft_track_nav)
         self.trackleft = None
         self.trackright.remove_value_listener(self._trackright_track_nav)
+        if getattr(self, 'right_shift_btn', None) is not None:
+            self.right_shift_btn.remove_value_listener(self._on_right_shift)
+            self.right_shift_btn = None
         self.trackright = None
         return
 
@@ -1342,6 +1355,57 @@ class hercules_p32_dj(ControlSurface):
 
         return -1
 
+    # ----- Luces de los pads de navegacion (SHIFT derecho) -----
+
+    def _nav_pad_element(self, note):
+        """Elemento del pad (deck derecho, canal 2) que hoy es duenio de esa nota, si existe."""
+        for pad in getattr(self, '_pads', None) or []:
+            try:
+                if pad.message_channel() == CH_DECK_B and pad.message_identifier() == note:
+                    return pad
+            except Exception:
+                continue
+        return None
+
+    def _send_nav_led(self, note, value):
+        pad = self._nav_pad_element(note)
+        if pad is not None:
+            # Por el elemento, para que su cache de envio quede consistente
+            pad.send_value(value, force=True)
+        else:
+            self._send_raw(0x90 | CH_DECK_B, note, value)
+        # Por si el firmware guarda una capa de luces propia para SHIFT
+        self._send_raw(0x90 | CH_SHIFT_B, note, value)
+
+    def _on_right_shift(self, value):
+        self._right_shift_held = value > 0
+        if self._right_shift_held:
+            for note in NAV_NOTES:
+                self._send_nav_led(note, NAV_LED_DIM)
+        else:
+            self._restore_nav_leds()
+
+    def _restore_nav_leds(self):
+        for note in NAV_NOTES:
+            self._send_raw(0x90 | CH_SHIFT_B, note, 0)
+        if active_mode == '_mode2':
+            self._light_mode2_keyboard(True)
+            return
+        session = getattr(self, '_session', None)
+        pads = getattr(self, '_pads', None) or []
+        if session is None:
+            return
+        width = session.width() if hasattr(session, 'width') else 7
+        for note in NAV_NOTES:
+            pad = self._nav_pad_element(note)
+            if pad is None:
+                continue
+            index = pads.index(pad)
+            try:
+                session.scene(index // width).clip_slot(index % width).update()
+            except Exception:
+                pad.send_value(0, force=True)
+
     def _passthrough_notes(self):
         """(canal, nota) que deben llegar a la pista armada en el modo activo.
         Todo lo demas lo captura el script para que ningun boton dispare notas."""
@@ -1454,6 +1518,10 @@ class hercules_p32_dj(ControlSurface):
         if len(midi_bytes) == 3 and (midi_bytes[0] & 0xF0) in (0x80, 0x90):
             status, note, velocity = midi_bytes
             key = (status & 0x0F, note)
+            if key[0] == CH_SHIFT_B and note in NAV_NOTES and getattr(self, '_right_shift_held', False):
+                # Pad de navegacion con SHIFT: brilla mientras esta presionado; la nota sigue su curso
+                pressed = (status & 0xF0) == 0x90 and velocity > 0
+                self._send_nav_led(note, NAV_LED_BRIGHT if pressed else NAV_LED_DIM)
             if key in getattr(self, '_reported_notes', ()):
                 # Copia de una nota del teclado del Modo 2: solo feedback de luz
                 pressed = (status & 0xF0) == 0x90 and velocity > 0

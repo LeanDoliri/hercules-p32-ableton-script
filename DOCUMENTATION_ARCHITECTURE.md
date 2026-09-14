@@ -87,7 +87,8 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **SYNC:** Rehacer (Redo)
     *   **SHIFT:** Alternar Vista Session / Arrangement
 *   **LOAD A / LOAD B:** Desplazamiento por las pistas (Izquierda / Derecha). Si la pista seleccionada supera el banco visible actual, el cuadrante de sesión, los pads y los faders de volumen se desplazan automáticamente para mantenerla a la vista.
-*   **SHIFT + Pads (ambos modos):** Navegación de la cuadrícula (Bank Up/Down/Left/Right) con las notas 37/40/42/45 del canal 5 (0‑based). Al mover el banco horizontal, los pads, faders de volumen, mute/solo/arm y LEDs de selección se actualizan en sincronía. *A verificar en hardware:* el canal 4 es SHIFT + deck izquierdo (tempo fino), por lo que el canal 5 probablemente sea SHIFT + deck **derecho** y no el izquierdo como decía la documentación anterior.
+*   **SHIFT derecho + Pads (ambos modos):** Navegación de la cuadrícula (Bank Up/Down/Left/Right) con las notas 45 (arriba), 40 (izquierda), 42 (derecha) y 37 (abajo) del canal 5 (SHIFT + deck derecho), en forma de cruz sobre la página SAMPLER. Al mover el banco horizontal, los pads, faders de volumen, mute/solo/arm y LEDs de selección se actualizan en sincronía.
+*   **Luces de navegación:** mientras SHIFT derecho (canal 2, nota 7) está apretado, esos 4 pads se encienden en azul tenue y suben a azul pleno al presionarlos (`_on_right_shift`, `_send_nav_led`, constantes `NAV_*`). Al soltar SHIFT se restaura lo que mostraban: estado de los clip slots en Modo 1 (vía `clip_slot.update()`) o el teclado en Modo 2. Los mensajes de luz se envían al canal 2 y también al canal 5 por si el firmware mantiene una capa de luces propia para SHIFT.
 *   **SHIFT izquierdo:** además de ser modificador de hardware, al presionarlo alterna Session/Arrangement. Cada uso de SHIFT como modificador (por ejemplo para el tempo fino) también cambia de vista. Pendiente de decisión (ver §5.5).
 
 ---

@@ -52,7 +52,7 @@ Funciones de los 4 pads por columna (de arriba hacia abajo):
 ### Detención y Navegación de Clips
 *   **Stop Clip**: Los 4 botones bajo los knobs del deck izquierdo (**ON, ON, ON, MACRO**) y los 3 primeros del derecho (**ON, ON, ON**) detienen el clip de su respectiva pista (Pistas 1 a 7 del banco visible).
 *   **Stop All Clips**: El botón **MACRO** del deck derecho detiene todos los clips del proyecto.
-*   **Navegación de la Matriz**: Usando **SHIFT + pads** (notas 37/40/42/45 de la capa shift), es posible desplazar el recuadro de la matriz (Track/Scene Bank) hacia Arriba, Abajo, Izquierda o Derecha. *Pendiente de verificar en hardware si la capa shift de esos pads corresponde al deck izquierdo o al derecho.*
+*   **Navegación de la Matriz**: Manteniendo **SHIFT del deck derecho**, cuatro pads de la página SAMPLER del deck derecho forman una cruz que desplaza el recuadro de la matriz (Track/Scene Bank): fila 3 columna 2 = Arriba, fila 2 columna 1 = Izquierda, fila 2 columna 3 = Derecha, fila 1 (inferior) columna 2 = Abajo. Mientras SHIFT está apretado, esos pads se iluminan en azul tenue y suben de brillo al presionarlos; al soltar SHIFT vuelven a mostrar el estado de los clips.
 
 ---
 

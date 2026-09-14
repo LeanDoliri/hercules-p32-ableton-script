@@ -58,7 +58,7 @@ Hay un único `MixerComponent(7, 24)` creado en `__init__`. Cada modo crea su pr
 | 1 | Deck izquierdo (A) |
 | 2 | Deck derecho (B) |
 | 4 | SHIFT + deck A (tempo fino, CC 10) |
-| 5 | SHIFT + pads: navegación de banco (notas 37/40/42/45) |
+| 5 | SHIFT derecho + pads del deck derecho: navegación de banco (notas 45/40/42/37 = arriba/izq/der/abajo, con luces mientras SHIFT está apretado) |
 
 Pads por página (ambos decks): SAMPLER 36‑51, SLICER 52‑67, LOOP 68‑83, HOTCUE 84‑99. La fila superior son las notas más altas. Knobs EQ: CC 4/3/2/1 = High/Mid/Low/Filter; faders CC 6‑9; tempo = encoder relativo CC 10 en ch1. El JSON de Remotify usa canales 1‑based (restar 1 para pasar al código).
 
