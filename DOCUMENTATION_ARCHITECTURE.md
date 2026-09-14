@@ -7,7 +7,8 @@
 El script opera en dos modos principales que se alternan presionando el botón central **BROWSE**, sobre una capa base que nunca se desmonta.
 *   **Capa base** (`_mode0` en el código, activa en ambos modos): faders de volumen, crossfader, Arm/Solo/Mute/Select de las pistas 1‑4 (SLICER del deck izquierdo), transporte, tempo, LOAD A/B y botones inferiores.
 *   **Modo 1:** Enfocado en el lanzamiento de clips (Session View), mezcla y loops.
-*   **Modo 2:** Enfocado en tocar instrumentos virtuales (Finger Drumming) y control de Envíos/Retornos.
+*   **Modo 2:** Enfocado en tocar instrumentos virtuales (Finger Drumming) con el deck derecho como teclado cromático.
+*   **Knobs de EQ del centro (HIGH/MID/LOW, CC 4/3/2 en canales 1 y 2):** `[100% LIBRES]` en todos los modos, reservados al mapeo manual del usuario. No asignarles nada desde el script.
 
 ---
 
@@ -29,8 +30,9 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **Función:** Ninguna.
     *   **Uso:** El script captura sus notas (ver §2.4) para que ni los pads ni el selector de página disparen notas en una pista armada. No es mapeable manualmente en Modo 1.
 
-### 2.2. Knobs Superiores (Macros)
-*   En el Modo 1, los 8 knobs superiores (High, Mid, Low, Filter de ambos decks) controlan los **8 Macros** del dispositivo (Instrumento o Rack de Efectos) de la pista que esté seleccionada.
+### 2.2. Knobs FILTER (Macros) y Knobs de EQ (libres)
+*   En el Modo 1, solo los dos knobs **FILTER** (CC 1 de cada deck) controlan macros del primer dispositivo de la pista seleccionada: el izquierdo el **Macro 4** y el derecho el **Macro 8** (se conservan las posiciones 4 y 8 de la tupla original de 8 controles; las otras seis son `None`).
+*   Los 6 knobs **HIGH / MID / LOW** no están mapeados. Antes controlaban los macros 1‑3 y 5‑7; se liberaron el 2026‑09‑14 a pedido del usuario.
 
 ### 2.3. Faders y Knobs de Volumen
 *   Los faders/knobs de volumen de las pistas 1 a 7 (4 en Deck Izq, 3 en Deck Der + 1 Master) se reasignan dinámicamente al desplazarse por las pistas o bancos (`MixerComponent` sincronizado con `SessionComponent`), siguiendo siempre las 7 pistas visibles en la matriz de pads.
@@ -64,17 +66,9 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **Cómo:** en `build_midi_map`, esas notas se forwardean con `Live.MidiMap.forward_midi_note(..., should_consume_event=False)`: la pista recibe la nota normalmente y el script recibe una copia que usa solo para las luces (`_reported_notes` en `receive_midi`).
     *   **"Light Show" del firmware (páginas HOTCUE y SAMPLER):** el P32 tiene una animación propia de expansión en violeta al presionar pads en esas dos páginas. No la genera el script ni se puede apagar por MIDI. Según las notas del firmware 1.47 de Hercules, se desactiva manteniendo **HOTCUE + SAMPLER a la vez durante más de 3 segundos**; es volátil y hay que repetirlo cada vez que se desconecta el controlador. Con el Light Show apagado, las cuatro páginas se ven iguales.
 
-### 3.2. Knobs Superiores (Envíos y Retornos)
-*   **Deck Izquierdo (Envíos de la Pista Seleccionada):**
-    *   `Knob High`: Nivel del Envío A (Send A).
-    *   `Knob Mid`: Nivel del Envío B (Send B).
-    *   `Knob Low`: Nivel del Envío C (Send C).
-    *   `Knob Filter`: `[100% LIBRE]` (Sin mapear en Modo 2). El tempo se controla con el encoder LOOP/TEMPO (CC 10), que es parte de la capa base y no depende del modo.
-*   **Deck Derecho (Volumen Maestro de Retornos):**
-    *   `Knob High`: Volumen del Canal de Retorno A.
-    *   `Knob Mid`: Volumen del Canal de Retorno B.
-    *   `Knob Low`: Volumen del Canal de Retorno C.
-    *   `Knob Filter`: `[100% LIBRE]` (Sin mapear).
+### 3.2. Knobs en Modo 2
+*   Los 6 knobs **HIGH / MID / LOW**: `[100% LIBRES]` (ver §1). Hasta el 2026‑09‑14 el deck izquierdo controlaba los Envíos A/B/C de la pista seleccionada y el derecho el volumen de los Retornos A/B/C; `_mode2_devices()` y `_remove_mode2_devices()` quedaron vacíos a propósito.
+*   Los dos knobs **FILTER**: `[100% LIBRES]` en Modo 2 (en Modo 1 son macros). El tempo se controla con el encoder LOOP/TEMPO (CC 10), que es parte de la capa base y no depende del modo.
 
 ---
 

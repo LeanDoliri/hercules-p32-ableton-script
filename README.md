@@ -22,7 +22,7 @@ No es necesario clonar el repositorio completo. Para instalar el script:
 Para garantizar la estabilidad y el correcto funcionamiento de las funciones avanzadas del script, es indispensable trabajar sobre una plantilla base en Ableton con la siguiente estructura:
 
 - **7 Pistas de Audio/MIDI** (Requeridas para la correcta alineación de los faders de volumen y la navegación).
-- **3 Pistas de Retorno (Envíos)** (Envío A, Envío B y Envío C. Con menos retornos el Modo 2 carga igual, pero los knobs que no tengan envío o retorno asignado simplemente no hacen nada).
+- **3 Pistas de Retorno** (recomendado para la plantilla; el script ya no mapea envíos ni retornos, así que no es obligatorio).
 
 **Sugerencia:** Se recomienda crear un proyecto vacío con 7 pistas y 3 retornos y guardarlo como plantilla predeterminada (`Archivo -> Guardar Live Set como predeterminado`).
 
@@ -37,14 +37,13 @@ El controlador opera bajo dos modos principales:
 ### Modo 1: Lanzamiento y Macros (Predeterminado)
 - **Pads:** Grilla de 7x4 dedicada al lanzamiento de clips en Session View.
 - **Mezclador Dinámico:** Control de volumen con faders físicos (pistas 1 a 7 + Master), mute, solo y arm que se desplazan y reasignan automáticamente al navegar entre bancos o pistas (`LOAD A/B`).
-- **Macros:** Las 8 perillas superiores controlan los Macros del dispositivo (plugin) seleccionado.
+- **Macros:** Los dos knobs FILTER controlan los Macros 4 y 8 del dispositivo (plugin) seleccionado.
+- **Knobs de EQ libres:** Los 6 knobs HIGH / MID / LOW del centro no están mapeados en ningún modo, para que los asignes a mano con Ctrl+M (por ejemplo, a un EQ Eight).
 
-### Modo 2: Finger Drumming y Envíos Dinámicos
+### Modo 2: Finger Drumming
 Se accede a este modo presionando el encoder de **BROWSE**.
-- **Pads (Finger Drumming):** El panel de pads derecho se transforma para enviar notas MIDI, ideal para interpretar instrumentos virtuales o Drum Racks.
-- **Envíos Dinámicos:** Las 3 perillas superiores del **Deck Izquierdo** se desvinculan de los Macros y pasan a controlar los Envíos de la pista actualmente seleccionada:
-  - **Perilla HIGH:** Controla el Envío A.
-  - **Perilla MID:** Controla el Envío B.
-  - **Perilla LOW:** Controla el Envío C.
+- **Pads (Finger Drumming):** El panel de pads derecho se transforma en un teclado cromático de 64 notas (sus 4 páginas, desde C1) con luces tipo piano, ideal para interpretar instrumentos virtuales o Drum Racks.
+- **Clip launcher reducido:** El deck izquierdo sigue lanzando clips en una grilla de 4x4.
+- Los knobs de EQ siguen libres; los de volumen, faders, transporte y Stop Clip funcionan igual que en el Modo 1.
 
 

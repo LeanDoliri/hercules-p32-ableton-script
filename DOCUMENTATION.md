@@ -45,9 +45,9 @@ Funciones de los 4 pads por columna (de arriba hacia abajo):
 *   **Fila 3 (Pad Medio-Inferior - Violeta)**: Multiplica el tamaño del loop al doble (x2).
 *   **Fila 4 (Pad Inferior - Azul)**: Beatjump hacia adelante (mueve el loop y el cabezal de reproducción saltando una cantidad equivalente al tamaño actual del loop).
 
-### Control de Dispositivos (Macros)
-Los knobs de la parte superior están vinculados a los controles del dispositivo (Device) de la pista seleccionada:
-*   Los 8 knobs correspondientes a **High, Mid, Low y Filter** (4 en el deck izquierdo y 4 en el derecho) controlan automáticamente los **8 Macros** del dispositivo principal o Rack activo en la pista seleccionada.
+### Control de Dispositivos (Macros) y Knobs de EQ libres
+*   Los dos knobs **FILTER** (uno por deck) controlan los **Macros 4 y 8** del primer dispositivo o Rack de la pista seleccionada.
+*   Los 6 knobs de **EQ del centro (HIGH, MID, LOW de cada deck)** están **libres en todos los modos**: el script no los toca, así que podés asignarlos a mano con **Ctrl+M** (por ejemplo a un EQ Eight o a un efecto de envío) y el mapeo se conserva en el Live Set.
 
 ### Detención y Navegación de Clips
 *   **Stop Clip**: Los 4 botones bajo los knobs del deck izquierdo (**ON, ON, ON, MACRO**) y los 3 primeros del derecho (**ON, ON, ON**) detienen el clip de su respectiva pista (Pistas 1 a 7 del banco visible).
@@ -56,8 +56,8 @@ Los knobs de la parte superior están vinculados a los controles del dispositivo
 
 ---
 
-## 3. Modo 2: Finger Drumming y Control de Envíos
-Al presionar el encoder **BROWSE**, el controlador entra en el Modo 2. Este modo está optimizado para tocar instrumentos virtuales y controlar efectos de envío.
+## 3. Modo 2: Finger Drumming
+Al presionar el encoder **BROWSE**, el controlador entra en el Modo 2. Este modo está optimizado para tocar instrumentos virtuales con el deck derecho.
 
 ### Matriz Dividida (4x4 + Notas MIDI)
 *   **Deck Izquierdo (Clip Launcher 4x4)**: La matriz de lanzamiento de clips se reduce a una cuadrícula de 4 pistas por 4 escenas, utilizando únicamente los 16 pads del deck izquierdo.
@@ -65,16 +65,9 @@ Al presionar el encoder **BROWSE**, el controlador entra en el Modo 2. Este modo
 *   **Luces del teclado**: los pads se iluminan como un piano (teclas blancas en violeta, negras en azul, todas las C en rojo) y suben de brillo mientras están presionados.
 *   **Importante (Light Show del P32)**: en las páginas HOTCUE y SAMPLER el firmware del controlador dispara por su cuenta una animación de expansión en violeta al presionar un pad. Para desactivarla, mantené presionados **HOTCUE y SAMPLER al mismo tiempo durante más de 3 segundos**. Hay que repetirlo cada vez que desconectás el controlador (requiere firmware 1.47 o superior).
 
-### Control de Envíos y Retornos (Sends & Returns)
-Se reasignan los controles de ecualización para manejar de forma avanzada los envíos y los retornos del proyecto:
-*   **Knobs de EQ Izquierdos (Cantidades de Envío)**:
-    *   **Knob HIGH (Izq)**: Controla el nivel del **Envío A** (Send A) de la pista actualmente seleccionada.
-    *   **Knob MID (Izq)**: Controla el nivel del **Envío B** (Send B) de la pista seleccionada.
-    *   **Knob LOW (Izq)**: Controla el nivel del **Envío C** (Send C) de la pista seleccionada.
-*   **Knobs de EQ Derechos (Volumen de Retornos)**:
-    *   **Knob HIGH (Der)**: Controla el volumen general del **Canal de Retorno A** (Return A).
-    *   **Knob MID (Der)**: Controla el volumen general del **Canal de Retorno B** (Return B).
-    *   **Knob LOW (Der)**: Controla el volumen general del **Canal de Retorno C** (Return C).
+### Knobs de EQ
+*   Los 6 knobs **HIGH / MID / LOW** siguen libres, igual que en el Modo 1. (Hasta septiembre de 2026 controlaban los Envíos A/B/C de la pista seleccionada y el volumen de los Retornos A/B/C; se quitó a pedido para dejarlos disponibles al mapeo manual.)
+*   Los dos knobs **FILTER** no tienen función en el Modo 2.
 
 ### Controles Mantenidos
 *   Los botones **Stop Clip** bajo los knobs del deck izquierdo detienen los clips de las 4 pistas visibles; el **MACRO** derecho sigue siendo Stop All.

@@ -42,7 +42,8 @@ Depurar: `self.log_message(...)` escribe en el log de Live y `self.show_message(
 ### Tres capas de mapeo
 
 - `_mode0()` es la **capa base, siempre activa**: se llama una vez en `__init__` y nunca se desmonta. Contiene faders de volumen, crossfader, arm/solo/mute/select de las pistas 1‑4 (página SLICER del deck izquierdo), transporte, tempo, LOAD A/B y los botones de utilidad inferiores.
-- `_mode1()` (clip launcher 7×4, macros, página LOOP, mixer del deck derecho) y `_mode2()` (clip launcher 4×4 en el deck izquierdo, sends/returns, deck derecho libre) **se alternan** con el encoder BROWSE (ch0 nota 1).
+- `_mode1()` (clip launcher 7×4, macros en los FILTER, página LOOP, mixer del deck derecho) y `_mode2()` (clip launcher 4×4 en el deck izquierdo, deck derecho como teclado cromático) **se alternan** con el encoder BROWSE (ch0 nota 1).
+- Los 6 knobs de EQ del centro (CC 4/3/2 en ch1 y ch2) están **reservados al mapeo manual del usuario** y no deben mapearse desde el script en ningún modo (pedido explícito del 2026‑09‑14; antes eran macros en Modo 1 y sends/returns en Modo 2).
 - Cada modo tiene su par `_modeN()` / `_remove_modeN()`. `_set_active_mode()` y `_remove_active_mode()` despachan según el global `active_mode`. Los `_activate_mode0` y `_activate_shift_mode*` son restos de Remotify sin uso.
 
 ### Componentes compartidos
@@ -68,7 +69,7 @@ Pads por página (ambos decks): SAMPLER 36‑51, SLICER 52‑67, LOOP 68‑83, H
 - Los elementos y componentes deben crearse dentro de `with self.component_guard():` (así se registran en la superficie). Los callbacks de `receive_midi` ya corren dentro del guard; los listeners crudos de Live (`add_selected_device_listener`) no. El guard es reentrante.
 - `disconnect()` de un elemento **no** lo desregistra de la superficie: sigue en `self._controls` y `build_midi_map` le vuelve a instalar forwarding si `script_wants_forwarding()` es verdadero. Por eso `build_midi_map` apaga el forwarding de todo elemento huérfano cuya nota deba pasar a la pista antes de llamar a `super()`. Llamar `request_rebuild_midi_map()` después de cambiar mapeos.
 - Para ver qué emite un control físico: `DEBUG_LOG_MIDI = True` al tope de `hercules_p32_dj.py` y leer las líneas `P32 MIDI in:` en `Log.txt`.
-- `CappedEncoderElement` reemplaza el mapeo nativo por un listener que escribe `parameter.value = v/127*0.85` (0.85 = 0 dB en volumen, sends y returns).
+- `CappedEncoderElement` reemplaza el mapeo nativo por un listener que escribe `parameter.value = v/127*0.85` (0.85 = 0 dB). Hoy solo lo usan los 8 knobs de volumen de la capa base.
 - Se usa bastante API privada de `_Framework` (`_session._track_offset`, `_reassign_scenes`, `_enable_skinning`, `_link`, `selected_strip()._track`). Puede romper entre versiones de Live.
 
 ## Pendientes conocidos

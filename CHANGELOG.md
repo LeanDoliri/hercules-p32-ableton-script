@@ -7,8 +7,7 @@ Se implementó una nueva clase personalizada llamada `CappedEncoderElement` que 
 *   **¿Qué hace?** Escucha todos los mensajes entrantes de las perillas rotativas de la consola y matemáticamente corta cualquier valor superior a `0.85` de la escala MIDI (lo cual equivale exactamente a **0 dB** en la interfaz de Ableton Live).
 *   **¿A qué afecta?**
     *   Capa base (`_mode0` en el código, siempre activa): Perillas de volumen general de todas las pistas.
-    *   Modo 2: Perillas de Envíos A, B y C de la pista seleccionada (Deck Izquierdo).
-    *   Modo 2: Perillas de Volumen Maestro de los canales de Retorno A, B y C (Deck Derecho).
+    *   (Hasta el 2026‑09‑14 también a los envíos A/B/C y a los retornos A/B/C en Modo 2; esos mapeos se quitaron, ver sección 5.)
 *   **Beneficio:** Permite al DJ girar las perillas físicas rápidamente hasta el tope físico sabiendo que la señal de audio nunca superará el umbral de los 0 dB.
 
 ## 2. Botones de Transporte Personalizados
@@ -43,6 +42,7 @@ Se rediseñó la interacción entre `SessionComponent` y `MixerComponent` para q
 > Las luces LED de estos controles funcionan mediante la lógica nativa del script original cuando detectan señales entrantes válidas. Las páginas "HOTCUE" no tienen asignaciones nativas, pero desde el swallow global (sección 5) sus notas tampoco llegan a las pistas en Modo 1; la única página libre es el deck derecho en Modo 2.
 
 ## 5. Correcciones de Robustez (septiembre 2026)
+*   **Knobs de EQ libres:** los 6 knobs HIGH/MID/LOW del centro ya no se mapean en ningún modo (antes: macros 1‑3 y 5‑7 en Modo 1; envíos A/B/C y retornos A/B/C en Modo 2). Quedan para mapeo manual con Ctrl+M. Los dos FILTER siguen como macros 4 y 8 en Modo 1.
 *   **Stop Clip, Stop All y metrónomo restaurados:** un commit del 2026‑09‑14 los había eliminado creyendo que las notas 3‑6 (ON/ON/ON/MACRO) y la nota 1 (encoder LOOP/TEMPO izquierdo) eran los selectores de página. Los selectores reales son las notas 11‑14. Vuelven a funcionar como en la versión de agosto: 7 Stop Clip en Modo 1, 4 en Modo 2, MACRO derecho = Stop All, encoder izquierdo = metrónomo.
 *   **Diagnóstico ampliado con `DEBUG_LOG_MIDI`:** además de la entrada y salida MIDI, se vuelca el mapa de CC tras cada `build_midi_map` y cada `CappedEncoderElement` loguea a qué parámetro se conecta y qué valor escribe.
 *   **Swallow global de notas:** el script ahora captura todas las notas de los 16 canales salvo las que deben llegar a la pista armada (solo las 4 páginas del deck derecho en Modo 2; en Modo 1 no pasa ninguna). Reemplaza al bucle de 200 botones con listener vacío y cubre los selectores de página SAMPLER/SLICER emitan lo que emitan. Nuevo flag `DEBUG_LOG_MIDI` para loguear lo que llega.

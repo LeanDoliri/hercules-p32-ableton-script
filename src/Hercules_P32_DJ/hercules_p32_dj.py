@@ -278,17 +278,11 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def _mode2_devices(self):
-        self.mixer.selected_strip().set_send_controls((CappedEncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute), CappedEncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute), CappedEncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute)))
-        self.mixer.return_strip(0).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute))
-        self.mixer.return_strip(1).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute))
-        self.mixer.return_strip(2).set_volume_control(CappedEncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute))
+        # Los knobs de EQ del centro quedan libres tambien en Modo 2 (antes: envios A/B/C
+        # de la pista seleccionada en el deck izquierdo y volumen de retornos en el derecho).
         return
 
     def _remove_mode2_devices(self):
-        self.mixer.selected_strip().set_send_controls(None)
-        self.mixer.return_strip(0).set_volume_control(None)
-        self.mixer.return_strip(1).set_volume_control(None)
-        self.mixer.return_strip(2).set_volume_control(None)
         return
 
 
@@ -624,14 +618,16 @@ class hercules_p32_dj(ControlSurface):
             devices = self.mixer.selected_strip()._track.devices
             self.actual_device = devices[device_number]
             self.device_tracktype_selected__chain_number_1 = DeviceComponent()
+            # Los 6 knobs de EQ del centro (CC 4/3/2 de cada deck) quedan LIBRES para mapeo
+            # manual. Solo los dos FILTER (CC 1) controlan macros: el 4 (izq) y el 8 (der).
             device_controls = (
-             EncoderElement(MIDI_CC_TYPE, 1, 4, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 1, 3, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 1, 2, _map_modes.absolute),
+             None,
+             None,
+             None,
              EncoderElement(MIDI_CC_TYPE, 1, 1, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 4, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 3, _map_modes.absolute),
-             EncoderElement(MIDI_CC_TYPE, 2, 2, _map_modes.absolute),
+             None,
+             None,
+             None,
              EncoderElement(MIDI_CC_TYPE, 2, 1, _map_modes.absolute))
             self.device_tracktype_selected__chain_number_1.set_device(self.actual_device)
             self.device_tracktype_selected__chain_number_1.set_parameter_controls(tuple(device_controls))
