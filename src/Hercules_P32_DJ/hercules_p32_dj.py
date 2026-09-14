@@ -757,27 +757,17 @@ class hercules_p32_dj(ControlSurface):
         stop_button.name = 'stop_button'
         self.transport.set_stop_button(stop_button)
 
+        # SYNC es la nota 8 de cada deck. Las notas 11 y 12 NO son SYNC: son los selectores de
+        # pagina HOTCUE y LOOP (medido con DEBUG_LOG_MIDI); antes estaban mapeadas aca por error.
         # Right Sync -> Tap Tempo
-        self.right_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 8)
-        self.right_sync_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 11)
-        self.right_sync_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 12)
+        self.right_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_B, 8)
         self.transport.set_tap_tempo_button(self.right_sync_1)
-        if not self.right_sync_2.value_has_listener(self._do_tap_tempo):
-            self.right_sync_2.add_value_listener(self._do_tap_tempo, identify_sender=False)
-        if not self.right_sync_3.value_has_listener(self._do_tap_tempo):
-            self.right_sync_3.add_value_listener(self._do_tap_tempo, identify_sender=False)
 
         # Left Sync -> Redo
-        self.left_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 8)
-        self.left_sync_2 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 11)
-        self.left_sync_3 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 12)
+        self.left_sync_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_A, 8)
         if not self.left_sync_1.value_has_listener(self._do_redo):
             self.left_sync_1.add_value_listener(self._do_redo, identify_sender=False)
-        if not self.left_sync_2.value_has_listener(self._do_redo):
-            self.left_sync_2.add_value_listener(self._do_redo, identify_sender=False)
-        if not self.left_sync_3.value_has_listener(self._do_redo):
-            self.left_sync_3.add_value_listener(self._do_redo, identify_sender=False)
-        
+
 
         # ---------------------------
         record_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 2)
