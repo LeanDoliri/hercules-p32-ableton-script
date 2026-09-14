@@ -130,6 +130,17 @@
   td .capd{color:var(--muted)}
   .note{margin-top:14px;font-size:12.5px;color:var(--muted);max-width:70ch}
   @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+  /* ----- header link + footer ----- */
+  .repo{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:6px 11px;color:var(--ink-2);text-decoration:none;font-family:var(--display);font-weight:600;font-size:13px;letter-spacing:.8px;text-transform:uppercase}
+  .repo:hover,.repo:focus-visible{border-color:var(--ink-2);color:var(--ink);outline:none}
+  .repo svg{width:15px;height:15px;fill:currentColor}
+  footer{margin-top:36px;border-top:1px solid var(--line);padding-top:18px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 24px;color:var(--muted);font-size:12.5px}
+  footer .credit{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.6px;text-transform:uppercase;color:var(--ink-2)}
+  footer .credit a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--red)}
+  footer .credit a:hover{color:#ffb3ae}
+  footer .meta{max-width:60ch}
+  footer .meta a{color:var(--ink-2)}
 </style>
 </head>
 <body>
@@ -152,6 +163,7 @@
         </div>
       </div>
       <button id="shiftB" class="toggle" type="button" aria-pressed="false"><span class="dot"></span>Shift derecho apretado</button>
+      <a class="repo" href="https://github.com/LeanDoliri/hercules-p32-ableton-script" target="_blank" rel="noopener"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>Repo en GitHub</a>
     </div>
   </header>
 
@@ -175,6 +187,14 @@
     <div class="tblwrap"><table id="tbl"><thead><tr><th>Control</th><th>Mensaje</th><th>Modo 1</th><th>Modo 2</th></tr></thead><tbody></tbody></table></div>
     <p class="note">Los canales se muestran como los ve Ableton en el modo de mapeo (Ctrl+M): 1 a 16. Entre paréntesis, el número que usa el código del script (0 a 15). Toda nota que no figure en este mapa la captura el script y no llega a ninguna pista; los CC no mapeados quedan libres para asignar a mano.</p>
   </section>
+
+  <footer>
+    <div>
+      <div class="credit">Script y mapa por <a href="https://github.com/LeanDoliri" target="_blank" rel="noopener">LeanDoliri</a></div>
+      <div class="meta">Código, manual de usuario y guía de instalación en <a href="https://github.com/LeanDoliri/hercules-p32-ableton-script" target="_blank" rel="noopener">github.com/LeanDoliri/hercules-p32-ableton-script</a>. Cualquier persona con un Hercules P32 DJ y Ableton Live puede instalarlo siguiendo el README.</div>
+    </div>
+    <div class="meta">Basado en el script generado con Remotify para el P32 (2017) y reescrito a mano sobre el framework <code>_Framework</code> de Ableton Live. Hercules y P32 DJ son marcas de Guillemot Corporation; este proyecto no está afiliado a Hercules ni a Ableton.</div>
+  </footer>
 </div>
 
 <script>
