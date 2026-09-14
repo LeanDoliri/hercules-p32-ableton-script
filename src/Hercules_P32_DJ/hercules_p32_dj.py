@@ -17,6 +17,34 @@ from _Framework.SessionComponent import SessionComponent
 from _Framework.EncoderElement import *
 from .ConfigurableButtonElement import ConfigurableButtonElement
 
+# Canales MIDI (0-based) tal como los emite la P32
+CH_GLOBAL = 0
+CH_DECK_A = 1
+CH_DECK_B = 2
+
+# Rango de notas de los pads por pagina (ambos decks)
+PAD_SAMPLER = 36
+PAD_SLICER = 52
+PAD_LOOP = 68
+PAD_HOTCUE = 84
+PAD_END = 100
+
+# Luces del teclado cromatico del deck derecho en Modo 2. Las notas van a la pista y ademas
+# el script recibe una copia (forward_midi_note con should_consume_event=False) para
+# iluminar el pad mas fuerte mientras esta presionado.
+# Paginas con este patron: las cuatro del deck derecho (SAMPLER, SLICER, LOOP, HOTCUE).
+KEYBOARD_LED_PAGES = (PAD_SAMPLER, PAD_SLICER, PAD_LOOP, PAD_HOTCUE)
+KEYBOARD_LED_WHITE = (81, 127)   # violeta: (reposo, presionado)
+# Ojo: los valores 40 y 80 no son "mas brillo", el firmware los toma como animacion de expansion.
+# 125/126/127 son el rojo/azul/violeta a pleno que ya usa el Modo 1 (grabando/reproduciendo/triggered).
+KEYBOARD_LED_BLACK = (41, 126)   # azul
+KEYBOARD_LED_C = (1, 125)        # rojo: todas las C
+BLACK_KEYS = (1, 3, 6, 8, 10)    # C#, D#, F#, G#, A#
+
+# Poner en True para loguear en Log.txt cada mensaje MIDI que llega al script.
+# Con el swallow global activo, casi todo llega: sirve para identificar que emite un boton fisico.
+DEBUG_LOG_MIDI = False
+
 class CappedEncoderElement(EncoderElement):
     def __init__(self, msg_type, channel, identifier, map_mode, *a, **k):
         super(CappedEncoderElement, self).__init__(msg_type, channel, identifier, map_mode, *a, **k)
@@ -83,19 +111,10 @@ class hercules_p32_dj(ControlSurface):
             self._set_active_mode()
             self._set_track_select_led()
             
-            # Swallow all unused utility / pad page selector buttons (0..35) across channels 0..5
-            known_buttons = {
-                (0, 1), (0, 2), (0, 3),
-                (1, 7), (1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (1, 15),
-                (2, 8), (2, 9), (2, 10), (2, 11), (2, 12), (2, 15),
-            }
-            self._swallowed_mode_buttons = []
-            for ch in range(6):
-                for note in range(36):
-                    if (ch, note) not in known_buttons:
-                        btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, ch, note)
-                        btn.add_value_listener(lambda value: None, identify_sender=False)
-                        self._swallowed_mode_buttons.append(btn)
+            # El swallow de notas no usadas (selectores de pagina, botones libres, etc.)
+            # se hace en build_midi_map(): todo lo que no este en _passthrough_notes() se captura.
+            self._swallowed_notes = set()
+            self._reported_notes = set()
 
             self.show_message('Hercules P32 DJ Ready')
         return
@@ -155,13 +174,47 @@ class hercules_p32_dj(ControlSurface):
         self.session_up.add_value_listener(self._reload_active_devices, identify_sender=False)
         self.refresh_state()
         self._mode2_devices()
+        self._light_mode2_keyboard(True)
         self.add_device_listeners()
         self.request_rebuild_midi_map()
         self.mode_2_to_1 = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 0, 1)
         self.mode_2_to_1.add_value_listener(self._activate_mode1, identify_sender=False)
         return
 
+    def _send_raw(self, status, data1, data2):
+        msg = (status, data1, data2)
+        if DEBUG_LOG_MIDI:
+            self.log_message('P32 MIDI out: %s' % (msg,))
+        if hasattr(self, '_send_midi'):
+            self._send_midi(msg)
+        elif hasattr(self, 'send_midi'):
+            self.send_midi(msg)
+
+    def _keyboard_led_value(self, note, pressed):
+        pitch = note % 12
+        if pitch == 0:
+            pair = KEYBOARD_LED_C
+        elif pitch in BLACK_KEYS:
+            pair = KEYBOARD_LED_BLACK
+        else:
+            pair = KEYBOARD_LED_WHITE
+        return pair[1] if pressed else pair[0]
+
+    def _keyboard_notes(self):
+        keys = set()
+        for page_start in KEYBOARD_LED_PAGES:
+            for note in range(page_start, page_start + 16):
+                keys.add((CH_DECK_B, note))
+        return keys
+
+    def _light_mode2_keyboard(self, on):
+        """Ilumina (o apaga) las paginas libres del deck derecho como un teclado."""
+        status = 0x90 | CH_DECK_B
+        for ch, note in sorted(self._keyboard_notes()):
+            self._send_raw(status, note, self._keyboard_led_value(note, False) if on else 0)
+
     def _remove_mode2(self):
+        self._light_mode2_keyboard(False)
         self._remove_mode2_devices()
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
@@ -174,7 +227,7 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_scene_bank_down_button(None)
         self.session_up.remove_value_listener(self._reload_active_devices)
         self._session.set_scene_bank_up_button(None)
-        if hasattr(self, '_session') and self._session is not None:
+        if getattr(self, '_session', None) is not None:
             if hasattr(self._session, 'remove_offset_listener') and hasattr(self._session, 'offset_has_listener'):
                 if self._session.offset_has_listener(self._on_session_offset_changed):
                     self._session.remove_offset_listener(self._on_session_offset_changed)
@@ -258,7 +311,7 @@ class hercules_p32_dj(ControlSurface):
 
     def _get_playing_clip(self, track_index):
         offset = 0
-        if hasattr(self, '_session') and self._session is not None:
+        if getattr(self, '_session', None) is not None:
             offset = self._session._track_offset
         actual_idx = offset + track_index
         if actual_idx < len(self.song().tracks):
@@ -290,7 +343,15 @@ class hercules_p32_dj(ControlSurface):
             clip = self._get_playing_clip(track_index)
             if clip and clip.looping:
                 length = clip.loop_end - clip.loop_start
-                clip.loop_end = clip.loop_start + (length * 2.0)
+                new_end = clip.loop_start + (length * 2.0)
+                try:
+                    end_marker = clip.end_marker
+                except Exception:
+                    end_marker = None
+                if end_marker is not None and not clip.is_midi_clip:
+                    new_end = min(new_end, end_marker)
+                if new_end > clip.loop_end:
+                    clip.loop_end = new_end
 
     def _on_loop_beatjump(self, value, btn, track_index):
         btn.send_value(80 if value > 0 else 41)
@@ -301,10 +362,10 @@ class hercules_p32_dj(ControlSurface):
                 clip.loop_end += length
                 clip.loop_start += length
                 
-                # Attempt to move the playing position directly (supported in newer Ableton versions)
+                # playing_position es de solo lectura; move_playing_pos salta en beats
                 try:
-                    clip.playing_position = clip.playing_position + length
-                except:
+                    clip.move_playing_pos(length)
+                except Exception:
                     pass
 
     def _mode1(self):
@@ -453,7 +514,7 @@ class hercules_p32_dj(ControlSurface):
         self._session.set_track_bank_right_button(None)
         self.session_down.remove_value_listener(self._reload_active_devices)
         self._session.set_scene_bank_down_button(None)
-        if hasattr(self, '_session') and self._session is not None:
+        if getattr(self, '_session', None) is not None:
             if hasattr(self._session, 'remove_offset_listener') and hasattr(self._session, 'offset_has_listener'):
                 if self._session.offset_has_listener(self._on_session_offset_changed):
                     self._session.remove_offset_listener(self._on_session_offset_changed)
@@ -479,7 +540,6 @@ class hercules_p32_dj(ControlSurface):
                     try:
                         btn.send_value(0)
                         btn.set_enabled(False)
-                        btn.suppress_script_forwarding = False
                         btn.disconnect()
                     except Exception:
                         pass
@@ -495,7 +555,6 @@ class hercules_p32_dj(ControlSurface):
                         btn.send_value(0)
                         btn.remove_value_listener(listener)
                         btn.set_enabled(False)
-                        btn.suppress_script_forwarding = False
                         btn.disconnect()
                     except Exception:
                         pass
@@ -731,32 +790,32 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def add_device_listeners(self):
-        num_of_tracks = len(self.song().tracks)
-        value = 'add device listener'
-        for index in range(num_of_tracks):
-            self.song().tracks[index].view.add_selected_device_listener(self._reload_active_devices)
-
+        for track in self.song().tracks:
+            view = track.view
+            if not view.selected_device_has_listener(self._reload_active_devices):
+                view.add_selected_device_listener(self._reload_active_devices)
         return
 
     def remove_device_listeners(self):
-        num_of_tracks = len(self.song().tracks)
-        value = 'remove device listener'
-        for index in range(num_of_tracks):
-            if hasattr(self.song().tracks[index].view, 'remove_selected_device_listener'):
-                self.song().tracks[index].view.remove_selected_device_listener(self._reload_active_devices)
-
+        # Las pistas creadas con el modo activo no tienen listener: remover sin guard lanza RuntimeError
+        for track in self.song().tracks:
+            view = track.view
+            if view.selected_device_has_listener(self._reload_active_devices):
+                view.remove_selected_device_listener(self._reload_active_devices)
         return
 
     def _reload_active_devices(self, value=None):
-        self._remove_active_devices()
-        self._set_active_devices()
-        if hasattr(self, '_turn_on_device_select_leds'):
-            self._turn_off_device_select_leds()
-            self._turn_on_device_select_leds()
-        if hasattr(self, '_all_prev_device_leds'):
-            self._all_prev_device_leds()
-        if hasattr(self, '_all_nxt_device_leds'):
-            self._all_nxt_device_leds()
+        # Puede llegar desde listeners crudos de Live (fuera del guard); el guard es reentrante
+        with self.component_guard():
+            self._remove_active_devices()
+            self._set_active_devices()
+            if hasattr(self, '_turn_on_device_select_leds'):
+                self._turn_off_device_select_leds()
+                self._turn_on_device_select_leds()
+            if hasattr(self, '_all_prev_device_leds'):
+                self._all_prev_device_leds()
+            if hasattr(self, '_all_nxt_device_leds'):
+                self._all_nxt_device_leds()
         return
 
     def _set_active_devices(self):
@@ -780,7 +839,7 @@ class hercules_p32_dj(ControlSurface):
     def _set_track_select_led(self):
         self._turn_off_track_select_leds()
         offset = 0
-        if hasattr(self, '_session'):
+        if getattr(self, '_session', None) is not None:
             offset = self._session._track_offset
         num_of_tracks = len(self.song().tracks)
         pos = offset + 6
@@ -830,7 +889,7 @@ class hercules_p32_dj(ControlSurface):
     def _turn_off_track_select_leds(self):
         num_of_tracks = len(self.song().tracks)
         offset = 0
-        if hasattr(self, '_session'):
+        if getattr(self, '_session', None) is not None:
             offset = self._session._track_offset
         pos = offset + 6
         pos2 = pos + 1
@@ -878,7 +937,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_7(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 7
             else:
                 move = 7
@@ -890,7 +949,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_6(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 6
             else:
                 move = 6
@@ -902,7 +961,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_5(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 5
             else:
                 move = 5
@@ -914,7 +973,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_4(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 4
             else:
                 move = 4
@@ -926,7 +985,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_3(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 3
             else:
                 move = 3
@@ -938,7 +997,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_2(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 2
             else:
                 move = 2
@@ -950,7 +1009,7 @@ class hercules_p32_dj(ControlSurface):
 
     def track_select_1(self, value):
         if value > 0:
-            if hasattr(self, '_session'):
+            if getattr(self, '_session', None) is not None:
                 move = self._session._track_offset + 1
             else:
                 move = 1
@@ -1023,16 +1082,17 @@ class hercules_p32_dj(ControlSurface):
         return
 
     def _on_session_offset_changed(self):
-        if hasattr(self, '_session') and self._session is not None:
+        if getattr(self, '_session', None) is None:
+            return
+        with self.component_guard():
             self.current_track_offset = self._session._track_offset
             self.current_scene_offset = self._session._scene_offset
-            if hasattr(self, 'mixer') and self.mixer is not None:
+            if getattr(self, 'mixer', None) is not None:
                 self.mixer.set_track_offset(self._session._track_offset)
-            if hasattr(self, '_set_track_select_led'):
-                self._set_track_select_led()
+            self._set_track_select_led()
 
     def _ensure_track_in_view(self, track_index):
-        if hasattr(self, '_session') and self._session is not None:
+        if getattr(self, '_session', None) is not None:
             num_tracks = self._session.width() if hasattr(self._session, 'width') else 7
             current_offset = self._session._track_offset
             if track_index < current_offset:
@@ -1052,6 +1112,8 @@ class hercules_p32_dj(ControlSurface):
     def _trackright_track_nav(self, value):
         if value > 0:
             track_idx = self.selected_track_idx() - 1
+            if track_idx < 0:
+                return
             num_of_tracks = len(self.song().tracks)
             if track_idx + 1 < num_of_tracks:
                 new_idx = track_idx + 1
@@ -1218,9 +1280,9 @@ class hercules_p32_dj(ControlSurface):
         return self.tuple_index(self.song().view.selected_track.devices, self._device)
 
     def selected_track_idx(self):
+        # 1-based; devuelve 0 si la pista seleccionada es un return o el master
         self._track = self.song().view.selected_track
-        self._track_num = self.tuple_index(self.song().tracks, self._track)
-        self._track_num = self._track_num + 1
+        self._track_num = self.tuple_index(self.song().tracks, self._track) + 1
         return self._track_num
 
     def tuple_index(self, tuple, obj):
@@ -1228,8 +1290,122 @@ class hercules_p32_dj(ControlSurface):
             if tuple[i] == obj:
                 return i
 
-        return False
+        return -1
+
+    def _passthrough_notes(self):
+        """(canal, nota) que deben llegar a la pista armada en el modo activo.
+        Todo lo demas lo captura el script para que ningun boton dispare notas."""
+        keys = set()
+        # Unica excepcion: en Modo 2 el deck derecho es un teclado cromatico.
+        # En Modo 1 no pasa ninguna nota (HOTCUE incluido).
+        if active_mode == '_mode2':
+            # Deck derecho libre: SAMPLER + SLICER + LOOP + HOTCUE = 64 notas cromaticas desde C1
+            for note in range(PAD_SAMPLER, PAD_END):
+                keys.add((CH_DECK_B, note))
+        return keys
+
+    def _note_elements(self):
+        # Live 12 expone la lista como self.controls; versiones viejas como self._controls
+        controls = getattr(self, 'controls', None) or getattr(self, '_controls', None) or []
+        for control in controls:
+            if not isinstance(control, InputControlElement):
+                continue
+            try:
+                if control.message_type() != MIDI_NOTE_TYPE:
+                    continue
+                key = (control.message_channel(), control.message_identifier())
+            except Exception:
+                continue
+            yield control, key
+
+    def build_midi_map(self, midi_map_handle):
+        passthrough = self._passthrough_notes()
+        # Los elementos viejos de un modo anterior siguen registrados en la superficie y
+        # volverian a capturar sus notas: se les apaga el forwarding si la nota debe pasar.
+        for control, key in self._note_elements():
+            # Un ButtonElement desconectado queda con _undo_step_handler = None y revienta
+            # en receive_value si vuelve a recibir MIDI: nunca forwardear esos.
+            disconnected = getattr(control, '_undo_step_handler', 1) is None
+            if key in passthrough or disconnected:
+                control.suppress_script_forwarding = True
+                control.script_wants_forwarding = lambda: False
+        super(hercules_p32_dj, self).build_midi_map(midi_map_handle)
+        # Notas que ya tienen dueño: se leen del registro real de forwarding del framework
+        # (claves (status, nota)), no de una lista propia que puede quedar vacia.
+        owned = set()
+        registry = getattr(self, '_forwarding_registry', None)
+        if registry:
+            for fkey in list(registry.keys()):
+                try:
+                    status, ident = fkey[0], fkey[1]
+                except Exception:
+                    continue
+                if (status & 0xF0) in (0x80, 0x90):
+                    owned.add((status & 0x0F, ident))
+        else:
+            for control, key in self._note_elements():
+                try:
+                    if control.script_wants_forwarding():
+                        owned.add(key)
+                except Exception:
+                    pass
+        # Swallow global: cualquier nota que no sea de un elemento activo ni deba pasar a la pista
+        handle = self._c_instance.handle()
+        swallowed = set()
+        for ch in range(16):
+            for note in range(128):
+                key = (ch, note)
+                if key in passthrough or key in owned:
+                    continue
+                Live.MidiMap.forward_midi_note(handle, midi_map_handle, ch, note)
+                swallowed.add(key)
+        self._swallowed_notes = swallowed
+        # Teclado del Modo 2: forwarding NO exclusivo (should_consume_event=False). La pista
+        # recibe la nota y el script una copia, solo para el feedback de luces.
+        reported = set()
+        if active_mode == '_mode2':
+            for ch, note in self._keyboard_notes():
+                if (ch, note) not in passthrough:
+                    continue
+                try:
+                    Live.MidiMap.forward_midi_note(handle, midi_map_handle, ch, note, False)
+                    reported.add((ch, note))
+                except TypeError:
+                    # Version de Live sin should_consume_event: sin feedback, la nota pasa igual
+                    break
+        self._reported_notes = reported
+
+    def receive_midi(self, midi_bytes):
+        if DEBUG_LOG_MIDI:
+            self.log_message('P32 MIDI in: %s' % (midi_bytes,))
+        if len(midi_bytes) == 3 and (midi_bytes[0] & 0xF0) in (0x80, 0x90):
+            status, note, velocity = midi_bytes
+            key = (status & 0x0F, note)
+            if key in getattr(self, '_reported_notes', ()):
+                # Copia de una nota del teclado del Modo 2: solo feedback de luz
+                pressed = (status & 0xF0) == 0x90 and velocity > 0
+                self._send_raw(0x90 | key[0], note, self._keyboard_led_value(note, pressed))
+                return
+            # Solo se descarta una nota si ningun elemento del script la espera
+            finder = getattr(self, 'get_recipient_for_nonsysex_midi_message', None)
+            if finder is not None:
+                try:
+                    if finder(midi_bytes) is None:
+                        return
+                except Exception:
+                    pass
+            else:
+                key = (midi_bytes[0] & 0x0F, midi_bytes[1])
+                if key in getattr(self, '_swallowed_notes', ()):
+                    return
+        super(hercules_p32_dj, self).receive_midi(midi_bytes)
 
     def disconnect(self):
+        # Sin esto los listeners crudos de Live (selected_device) quedan colgados al cambiar de superficie
+        for step in (self._remove_active_mode, self._remove_mode0, self.remove_device_listeners):
+            try:
+                step()
+            except Exception as e:
+                self.log_message('disconnect: %s failed: %s' % (getattr(step, '__name__', step), e))
         super(hercules_p32_dj, self).disconnect()
         return

@@ -22,9 +22,11 @@ No es necesario clonar el repositorio completo. Para instalar el script:
 Para garantizar la estabilidad y el correcto funcionamiento de las funciones avanzadas del script, es indispensable trabajar sobre una plantilla base en Ableton con la siguiente estructura:
 
 - **7 Pistas de Audio/MIDI** (Requeridas para la correcta alineación de los faders de volumen y la navegación).
-- **3 Pistas de Retorno (Envíos)** (Obligatorio contar con Envío A, Envío B y Envío C. Si el proyecto tiene menos envíos, el script evitará cargar el Modo 2 por seguridad).
+- **3 Pistas de Retorno (Envíos)** (Envío A, Envío B y Envío C. Con menos retornos el Modo 2 carga igual, pero los knobs que no tengan envío o retorno asignado simplemente no hacen nada).
 
 **Sugerencia:** Se recomienda crear un proyecto vacío con 7 pistas y 3 retornos y guardarlo como plantilla predeterminada (`Archivo -> Guardar Live Set como predeterminado`).
+
+**Documentación adicional:** el manual completo está en [DOCUMENTATION.md](DOCUMENTATION.md) y el detalle de mapeos y pendientes en [DOCUMENTATION_ARCHITECTURE.md](DOCUMENTATION_ARCHITECTURE.md). En `docs/` están la guía original de Remotify en PDF (EN/FR) y sus páginas como imágenes (`docs/images/page_1.png` a `page_7.png`, con el diagrama del panel del controlador); esa guía describe el script base, no las modificaciones de este repo.
 
 ---
 

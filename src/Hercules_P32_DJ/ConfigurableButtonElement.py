@@ -117,6 +117,8 @@ class ConfigurableButtonElement(ButtonElement):
 	def _draw_skin(self, value):
 		if self._skin is not None:
 			self._skin[value].draw(self)
-		
-	def script_wants_forwarding(self):
-		return not self.suppress_script_forwarding
+
+	# No se sobreescribe script_wants_forwarding(): la version base de _Framework solo pide
+	# forwarding si el boton tiene listeners y no esta suprimido. La version anterior devolvia
+	# True siempre, con lo que un boton desconectado (sin listeners, sin undo handler) seguia
+	# capturando su nota y explotaba en receive_value al presionarlo.

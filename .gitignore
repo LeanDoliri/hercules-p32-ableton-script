@@ -2,3 +2,4 @@ __MACOSX/
 *.pyc
 .DS_Store
 scratch/
+__pycache__/
