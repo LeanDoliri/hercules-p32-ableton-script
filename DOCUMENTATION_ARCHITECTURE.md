@@ -42,6 +42,7 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **Modo 2:** las 4 páginas del deck derecho (notas 36‑99, canal 2). El deck izquierdo no pasa nada.
 *   Los CC no se tocan (no disparan notas). Las capas SHIFT + pads (canales 3‑5) también se capturan salvo los 4 botones de navegación, que son elementos propios del script.
 *   Selectores de página del deck derecho, medidos con `DEBUG_LOG_MIDI` (canal 2): HOTCUE = nota 11, LOOP = 12, SLICER = 13, SAMPLER = 14. El deck izquierdo usa las mismas notas en canal 1.
+*   Notas 3‑6 del canal de cada deck = botones ON / ON / ON / MACRO bajo los knobs (Stop Clip por pista; MACRO derecho = Stop All). Nota 1 del deck izquierdo = presión del encoder LOOP/TEMPO (metrónomo). Un commit del 2026‑09‑14 los había eliminado creyendo que eran los selectores de página; están restaurados.
 *   Valores de LED de los pads (medidos): 1 / 41 / 81 = rojo / azul / violeta tenue; 125 / 126 / 127 = rojo / azul / violeta a pleno. Los valores 40 y 80 **no** son brillo intermedio: el firmware los interpreta como una animación de expansión en violeta.
 *   Para ver qué emite un botón físico: poner `DEBUG_LOG_MIDI = True` al tope de `hercules_p32_dj.py`, recargar el script y leer `Log.txt` (líneas `P32 MIDI in:`). Como casi todo se captura, casi todo aparece en el log.
 
@@ -79,6 +80,8 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
 
 ## 4. Controles Globales (Botones Inferiores y Centrales)
 *   **Botones Centrales (REC, SLIP):** Funciones estándar de grabar sesión y overdub.
+*   **ON / ON / ON / MACRO (bajo los knobs):** Stop Clip de las pistas 1‑7 del banco visible (en Modo 2 solo las 4 del deck izquierdo); el MACRO derecho es Stop All Clips.
+*   **Presión del encoder LOOP/TEMPO izquierdo:** Metrónomo on/off.
 *   **Botones Inferiores Deck Derecho:**
     *   **PLAY:** Play (Iniciar transporte)
     *   **CUE:** Stop (Detener transporte)

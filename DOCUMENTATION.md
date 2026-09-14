@@ -9,7 +9,7 @@ Estos controles están disponibles en todo momento, independientemente del modo 
 *   **Tempo**:
     *   **Giro del Encoder LOOP/TEMPO del Deck Izquierdo** (el encoder rotulado SIZE/ADJUST, CC 10; no los knobs de EQ ni Filter): Modifica el tempo del proyecto de a 1 BPM.
     *   **SHIFT + Giro del mismo Encoder**: Ajuste fino del tempo (décimas de BPM).
-    *   No hay control de metrónomo: el botón que lo hacía resultó ser un selector de página de pads y se eliminó.
+    *   **Presionar el Encoder LOOP/TEMPO del Deck Izquierdo**: Activa o desactiva el Metrónomo.
 *   **Navegación de Pistas (LOAD)**: Los botones **A** y **B** (LOAD) permiten desplazarse hacia la pista izquierda o derecha respectivamente.
 *   **Transporte Básico**:
     *   **PLAY (▶)**: Inicia la reproducción (Ubicado en la esquina inferior derecha).
@@ -49,9 +49,10 @@ Funciones de los 4 pads por columna (de arriba hacia abajo):
 Los knobs de la parte superior están vinculados a los controles del dispositivo (Device) de la pista seleccionada:
 *   Los 8 knobs correspondientes a **High, Mid, Low y Filter** (4 en el deck izquierdo y 4 en el derecho) controlan automáticamente los **8 Macros** del dispositivo principal o Rack activo en la pista seleccionada.
 
-### Navegación de Clips
+### Detención y Navegación de Clips
+*   **Stop Clip**: Los 4 botones bajo los knobs del deck izquierdo (**ON, ON, ON, MACRO**) y los 3 primeros del derecho (**ON, ON, ON**) detienen el clip de su respectiva pista (Pistas 1 a 7 del banco visible).
+*   **Stop All Clips**: El botón **MACRO** del deck derecho detiene todos los clips del proyecto.
 *   **Navegación de la Matriz**: Usando **SHIFT + pads** (notas 37/40/42/45 de la capa shift), es posible desplazar el recuadro de la matriz (Track/Scene Bank) hacia Arriba, Abajo, Izquierda o Derecha. *Pendiente de verificar en hardware si la capa shift de esos pads corresponde al deck izquierdo o al derecho.*
-*   No hay botones de **Stop Clip** ni **Stop All**: los que existían usaban las mismas notas que los selectores de página de pads y disparaban por error, así que se eliminaron.
 
 ---
 
@@ -76,6 +77,7 @@ Se reasignan los controles de ecualización para manejar de forma avanzada los e
     *   **Knob LOW (Der)**: Controla el volumen general del **Canal de Retorno C** (Return C).
 
 ### Controles Mantenidos
+*   Los botones **Stop Clip** bajo los knobs del deck izquierdo detienen los clips de las 4 pistas visibles; el **MACRO** derecho sigue siendo Stop All.
 *   La página **SLICER del deck izquierdo** sigue controlando Seleccionar / Mute / Solo / Arm de las 4 pistas visibles (es parte de la capa base, activa en todo momento).
 *   Los faders de volumen, el crossfader y los knobs Filter no cambian de función.
 *   La navegación de la matriz de clips (con SHIFT + Pads) sigue operativa.

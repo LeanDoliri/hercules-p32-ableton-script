@@ -45,6 +45,21 @@ BLACK_KEYS = (1, 3, 6, 8, 10)    # C#, D#, F#, G#, A#
 # Con el swallow global activo, casi todo llega: sirve para identificar que emite un boton fisico.
 DEBUG_LOG_MIDI = False
 
+def _debug_log(text):
+    try:
+        import logging
+        logging.getLogger('hercules_p32_dj').info(text)
+    except Exception:
+        pass
+
+def _describe_parameter(parameter):
+    try:
+        owner = parameter.canonical_parent
+        track = getattr(owner, 'canonical_parent', None)
+        return '%s @ %s' % (parameter.name, getattr(track, 'name', track))
+    except Exception as e:
+        return '%r (%s)' % (parameter, e)
+
 class CappedEncoderElement(EncoderElement):
     def __init__(self, msg_type, channel, identifier, map_mode, *a, **k):
         super(CappedEncoderElement, self).__init__(msg_type, channel, identifier, map_mode, *a, **k)
@@ -52,6 +67,9 @@ class CappedEncoderElement(EncoderElement):
         
     def connect_to(self, parameter):
         self._capped_parameter = parameter
+        if DEBUG_LOG_MIDI:
+            _debug_log('CappedEncoder ch%d cc%d connect_to %s' % (
+                self.message_channel(), self.message_identifier(), _describe_parameter(parameter)))
         if not self.value_has_listener(self._on_custom_value):
             self.add_value_listener(self._on_custom_value)
             
@@ -64,6 +82,13 @@ class CappedEncoderElement(EncoderElement):
     def _on_custom_value(self, value):
         if self._capped_parameter is not None:
             self._capped_parameter.value = (value / 127.0) * 0.85
+            if DEBUG_LOG_MIDI and value % 16 == 0:
+                _debug_log('CappedEncoder ch%d cc%d: in=%d -> %s ahora=%.3f' % (
+                    self.message_channel(), self.message_identifier(), value,
+                    _describe_parameter(self._capped_parameter), self._capped_parameter.value))
+        elif DEBUG_LOG_MIDI:
+            _debug_log('CappedEncoder ch%d cc%d: valor %d sin parametro asignado' % (
+                self.message_channel(), self.message_identifier(), value))
 
 class hercules_p32_dj(ControlSurface):
     def _do_toggle_session_view(self, value):
@@ -143,9 +168,19 @@ class hercules_p32_dj(ControlSurface):
         self._pads = [ButtonElement(session_is_momentary[index], session_types[index], session_channels[index], session_buttons[index]) for index in range(num_tracks * num_scenes)]
         self._grid = ButtonMatrixElement(rows=[self._pads[index * num_tracks:index * num_tracks + num_tracks] for index in range(num_scenes)])
         self._session.set_clip_launch_buttons(self._grid)
+        # Stop Clip: botones ON/ON/ON/MACRO bajo los knobs (notas 3-6). MACRO derecho = Stop All.
+        stop_all_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_B, 6)
+        self._session.set_stop_all_clips_button(stop_all_button)
+        stop_track_buttons = [3, 4, 5, 6]
+        stop_track_channels = [CH_DECK_A] * 4
+        self._track_stop_buttons = [ConfigurableButtonElement(1, MIDI_NOTE_TYPE, stop_track_channels[index], stop_track_buttons[index]) for index in range(num_tracks)]
+        self._session.set_stop_track_clip_buttons(tuple(self._track_stop_buttons))
         self._session._enable_skinning()
         self._session.set_stop_clip_triggered_value(127)
         self._session.set_stop_clip_value(81)
+        for index in range(num_tracks):
+            self._track_stop_buttons[index].set_on_off_values(81, 0)
+        stop_all_button.set_on_off_values(127, 0)
         for scene_index in range(num_scenes):
             scene = self._session.scene(scene_index)
             scene.set_scene_value(81)
@@ -219,6 +254,9 @@ class hercules_p32_dj(ControlSurface):
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
         self.set_highlighting_session_component(None)
+        self._session.set_stop_all_clips_button(None)
+        self._session.set_stop_track_clip_buttons(None)
+        self._track_stop_buttons = None
         self.session_right.remove_value_listener(self._reload_active_devices)
         self._session.set_track_bank_right_button(None)
         self.session_left.remove_value_listener(self._reload_active_devices)
@@ -399,6 +437,13 @@ class hercules_p32_dj(ControlSurface):
         self._pads = [ButtonElement(session_is_momentary[index], session_types[index], session_channels[index], session_buttons[index]) for index in range(num_tracks * num_scenes)]
         self._grid = ButtonMatrixElement(rows=[self._pads[index * num_tracks:index * num_tracks + num_tracks] for index in range(num_scenes)])
         self._session.set_clip_launch_buttons(self._grid)
+        # Stop Clip: botones ON/ON/ON/MACRO bajo los knobs (notas 3-6). MACRO derecho = Stop All.
+        stop_all_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_B, 6)
+        self._session.set_stop_all_clips_button(stop_all_button)
+        stop_track_buttons = [3, 4, 5, 6, 3, 4, 5]
+        stop_track_channels = [CH_DECK_A] * 4 + [CH_DECK_B] * 3
+        self._track_stop_buttons = [ConfigurableButtonElement(1, MIDI_NOTE_TYPE, stop_track_channels[index], stop_track_buttons[index]) for index in range(num_tracks)]
+        self._session.set_stop_track_clip_buttons(tuple(self._track_stop_buttons))
         scene_buttons = [
          51, 47, 43, 39]
         scene_channels = [2, 2, 2, 2]
@@ -423,6 +468,9 @@ class hercules_p32_dj(ControlSurface):
                 clip_slot.set_stopped_value(81)
                 clip_slot.set_started_value(126)
                 clip_slot.set_recording_value(125)
+        for index in range(num_tracks):
+            self._track_stop_buttons[index].set_on_off_values(81, 0)
+        stop_all_button.set_on_off_values(127, 0)
 
         self.session_up = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 5, 45)
         self._session.set_scene_bank_up_button(self.session_up)
@@ -504,6 +552,9 @@ class hercules_p32_dj(ControlSurface):
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
         self.set_highlighting_session_component(None)
+        self._session.set_stop_all_clips_button(None)
+        self._session.set_stop_track_clip_buttons(None)
+        self._track_stop_buttons = None
         self._scene_launch_buttons = None
         self._session.set_scene_launch_buttons(None)
         self.session_up.remove_value_listener(self._reload_active_devices)
@@ -673,6 +724,9 @@ class hercules_p32_dj(ControlSurface):
         direction_tempo_control_updown_mode0 = 'not set'
         self.tempo_control_updown_encoder = EncoderElement(MIDI_CC_TYPE, 1, 10, _map_modes.relative_smooth_two_compliment)
         self.tempo_control_updown_encoder.add_value_listener(self.tempo_control_updown_mode0, identify_sender=False)
+        metronome_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, CH_DECK_A, 1)
+        metronome_button.name = 'metronome_button'
+        self.transport.set_metronome_button(metronome_button)
         # --- New Utility Buttons ---
         self.left_shift_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 7)
         self.left_shift_btn.set_on_off_values(127, 0)
@@ -1374,6 +1428,29 @@ class hercules_p32_dj(ControlSurface):
                     # Version de Live sin should_consume_event: sin feedback, la nota pasa igual
                     break
         self._reported_notes = reported
+        if DEBUG_LOG_MIDI:
+            self._log_cc_registry()
+
+    def _log_cc_registry(self):
+        registry = getattr(self, '_forwarding_registry', None) or {}
+        lines = []
+        for fkey in sorted(registry.keys()):
+            try:
+                status, ident = fkey[0], fkey[1]
+            except Exception:
+                continue
+            if (status & 0xF0) != 0xB0:
+                continue
+            control = registry[fkey]
+            try:
+                info = '%s listeners=%s param=%s' % (
+                    type(control).__name__,
+                    getattr(control, '_input_signal_listener_count', '?'),
+                    getattr(control, '_capped_parameter', None) is not None)
+            except Exception as e:
+                info = 'err %s' % e
+            lines.append('CC ch%d #%d -> %s' % (status & 0x0F, ident, info))
+        self.log_message('P32 CC map (%s): %s' % (active_mode, ' | '.join(lines)))
 
     def receive_midi(self, midi_bytes):
         if DEBUG_LOG_MIDI:
