@@ -34,6 +34,9 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
 ### 2.3. Faders y Knobs de Volumen
 *   Los faders/knobs de volumen de las pistas 1 a 7 (4 en Deck Izq, 3 en Deck Der + 1 Master) se reasignan dinámicamente al desplazarse por las pistas o bancos (`MixerComponent` sincronizado con `SessionComponent`), siguiendo siempre las 7 pistas visibles en la matriz de pads.
 
+### 2.4. Botones Selectores de Página de Pads (HOTCUE, LOOP, SLICER, SAMPLER)
+*   Los 4 botones físicos superiores de cambio de página en ambos decks son interceptados y absorbidos de forma silenciosa por el script. No disparan comandos en Ableton (como stop de clips o metrónomo) ni envían notas MIDI crudas a las pistas armadas.
+
 ---
 
 ## 3. Modo 2 (Secundario)

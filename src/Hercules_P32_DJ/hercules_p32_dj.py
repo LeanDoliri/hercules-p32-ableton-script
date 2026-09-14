@@ -82,6 +82,15 @@ class hercules_p32_dj(ControlSurface):
             active_mode = '_mode1'
             self._set_active_mode()
             self._set_track_select_led()
+            
+            # Swallow all pad page selector buttons (HOTCUE, LOOP, SLICER, SAMPLER) on both decks
+            self._swallowed_mode_buttons = []
+            for ch in [1, 2]:
+                for note in range(1, 7):
+                    btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, ch, note)
+                    btn.add_value_listener(lambda value: None, identify_sender=False)
+                    self._swallowed_mode_buttons.append(btn)
+
             self.show_message('Hercules P32 DJ Ready')
         return
 
@@ -109,15 +118,6 @@ class hercules_p32_dj(ControlSurface):
         self._pads = [ButtonElement(session_is_momentary[index], session_types[index], session_channels[index], session_buttons[index]) for index in range(num_tracks * num_scenes)]
         self._grid = ButtonMatrixElement(rows=[self._pads[index * num_tracks:index * num_tracks + num_tracks] for index in range(num_scenes)])
         self._session.set_clip_launch_buttons(self._grid)
-        stop_all_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 6)
-        self._session.set_stop_all_clips_button(stop_all_button)
-        stop_track_buttons = [
-         3, 4, 5, 6]
-        stop_track_channels = [1, 1, 1, 1]
-        stop_track_types = [MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE]
-        stop_track_is_momentary = [1, 1, 1, 1]
-        self._track_stop_buttons = [ConfigurableButtonElement(stop_track_is_momentary[index], stop_track_types[index], stop_track_channels[index], stop_track_buttons[index]) for index in range(num_tracks)]
-        self._session.set_stop_track_clip_buttons(tuple(self._track_stop_buttons))
         self._session._enable_skinning()
         self._session.set_stop_clip_triggered_value(127)
         self._session.set_stop_clip_value(81)
@@ -135,11 +135,6 @@ class hercules_p32_dj(ControlSurface):
                 clip_slot.set_started_value(126)
                 clip_slot.set_recording_value(125)
 
-        for index in range(num_tracks):
-            stop_track_button = self._session._stop_track_clip_buttons[index]
-            stop_track_button.set_on_off_values(81, 0)
-
-        stop_all_button.set_on_off_values(127, 0)
         self.session_right = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 5, 42)
         self._session.set_track_bank_right_button(self.session_right)
         self.session_right.add_value_listener(self._reload_active_devices, identify_sender=False)
@@ -164,9 +159,6 @@ class hercules_p32_dj(ControlSurface):
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
         self.set_highlighting_session_component(None)
-        self._session.set_stop_all_clips_button(None)
-        self._track_stop_buttons = None
-        self._session.set_stop_track_clip_buttons(None)
         self.session_right.remove_value_listener(self._reload_active_devices)
         self._session.set_track_bank_right_button(None)
         self.session_left.remove_value_listener(self._reload_active_devices)
@@ -319,16 +311,6 @@ class hercules_p32_dj(ControlSurface):
         self._pads = [ButtonElement(session_is_momentary[index], session_types[index], session_channels[index], session_buttons[index]) for index in range(num_tracks * num_scenes)]
         self._grid = ButtonMatrixElement(rows=[self._pads[index * num_tracks:index * num_tracks + num_tracks] for index in range(num_scenes)])
         self._session.set_clip_launch_buttons(self._grid)
-        stop_all_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 2, 6)
-        self._session.set_stop_all_clips_button(stop_all_button)
-        stop_track_buttons = [
-         3, 4, 5, 6, 3, 4, 5]
-        stop_track_channels = [1, 1, 1, 1, 2, 2, 2]
-        stop_track_types = [MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, MIDI_NOTE_TYPE, 
-         MIDI_NOTE_TYPE, MIDI_NOTE_TYPE]
-        stop_track_is_momentary = [1, 1, 1, 1, 1, 1, 1]
-        self._track_stop_buttons = [ConfigurableButtonElement(stop_track_is_momentary[index], stop_track_types[index], stop_track_channels[index], stop_track_buttons[index]) for index in range(num_tracks)]
-        self._session.set_stop_track_clip_buttons(tuple(self._track_stop_buttons))
         scene_buttons = [
          51, 47, 43, 39]
         scene_channels = [2, 2, 2, 2]
@@ -354,11 +336,6 @@ class hercules_p32_dj(ControlSurface):
                 clip_slot.set_started_value(126)
                 clip_slot.set_recording_value(125)
 
-        for index in range(num_tracks):
-            stop_track_button = self._session._stop_track_clip_buttons[index]
-            stop_track_button.set_on_off_values(81, 0)
-
-        stop_all_button.set_on_off_values(127, 0)
         self.session_up = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 5, 45)
         self._session.set_scene_bank_up_button(self.session_up)
         self.session_up.add_value_listener(self._reload_active_devices, identify_sender=False)
@@ -438,9 +415,6 @@ class hercules_p32_dj(ControlSurface):
         self.remove_device_listeners()
         self._session.set_clip_launch_buttons(None)
         self.set_highlighting_session_component(None)
-        self._session.set_stop_all_clips_button(None)
-        self._track_stop_buttons = None
-        self._session.set_stop_track_clip_buttons(None)
         self._scene_launch_buttons = None
         self._session.set_scene_launch_buttons(None)
         self.session_up.remove_value_listener(self._reload_active_devices)
@@ -630,9 +604,6 @@ class hercules_p32_dj(ControlSurface):
         direction_tempo_control_updown_mode0 = 'not set'
         self.tempo_control_updown_encoder = EncoderElement(MIDI_CC_TYPE, 1, 10, _map_modes.relative_smooth_two_compliment)
         self.tempo_control_updown_encoder.add_value_listener(self.tempo_control_updown_mode0, identify_sender=False)
-        metronome_button = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 1)
-        metronome_button.name = 'metronome_button'
-        self.transport.set_metronome_button(metronome_button)
         # --- New Utility Buttons ---
         self.left_shift_btn = ConfigurableButtonElement(1, MIDI_NOTE_TYPE, 1, 7)
         self.left_shift_btn.set_on_off_values(127, 0)
