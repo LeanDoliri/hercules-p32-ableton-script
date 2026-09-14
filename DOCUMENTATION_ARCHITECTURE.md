@@ -80,3 +80,28 @@ Dado que cada modo de pads envía distintas notas MIDI, el script las utiliza pa
     *   **SHIFT:** Alternar Vista Session / Arrangement
 *   **LOAD A / LOAD B:** Desplazamiento por las pistas (Izquierda / Derecha). Si la pista seleccionada supera el banco visible actual, el cuadrante de sesión, los pads y los faders de volumen se desplazan automáticamente para mantenerla a la vista.
 *   **SHIFT + Pads Izq (Modo 1):** Navegación de la cuadrícula (Bank Up/Down/Left/Right). Al mover el banco horizontal, los pads, faders de volumen, mute/solo/arm y LEDs de selección se actualizan en sincronía.
+
+---
+
+## 5. Tareas Pendientes / Problemas a Resolver
+
+### 5.1. Fuga de notas MIDI al cambiar de página en los pads (SAMPLER / SLICER)
+*   **Objetivo:** Al presionar los botones físicos de selección de página (**SAMPLER**, **SLICER**, **LOOP**, **HOTCUE**) en el controlador, Ableton no debe recibir ninguna señal ni disparar notas en las pistas armadas con instrumentos virtuales.
+*   **Estado actual:** Al cambiar de página usando **SAMPLER** y **SLICER**, se continúa filtrando una nota MIDI que dispara sonidos en el instrumento seleccionado.
+*   **Contexto técnico para Claude / desarrollador:**
+    *   Se intentó capturar notas 0-35 en los canales 0 al 5 instanciando `ConfigurableButtonElement` con callbacks vacíos en `__init__`.
+    *   Sin embargo, los botones físicos de Sampler y Slicer continúan filtrando eventos de Note On hacia la pista armada.
+    *   *Acción recomendada:* Identificar el mensaje exacto (Canal MIDI, Note vs CC, y número) que emiten físicamente esos dos botones usando `Ctrl + M` en Ableton o un monitor MIDI, para interceptarlos de forma precisa o evaluar si la controladora envía un mensaje especial (SysEx / CC secundario).
+
+### 5.2. Escala cromática en páginas SLICER y LOOP del Deck Derecho (Modo 2)
+*   **Objetivo:** En el **Modo 2**, las cuatro páginas del deck derecho deben permitir tocar una escala cromática continua ascendente de 64 notas (pad inferior izquierdo de Sampler en **C1 / Nota 36**):
+    *   **SAMPLER:** Notas 36 a 51 (C1 a D#2).
+    *   **SLICER:** Notas 52 a 67 (E2 a G3).
+    *   **LOOP:** Notas 68 a 83 (G#3 a B4).
+    *   **HOTCUE:** Notas 84 a 99 (C5 a D#6).
+*   **Estado actual:** Las páginas **SAMPLER** y **HOTCUE** responden, pero en **SLICER** y **LOOP** no suena ninguna nota en Modo 2.
+*   **Contexto técnico para Claude / desarrollador:**
+    *   En el **Modo 1**, las notas 52 a 67 son usadas por el mezclador (`arm_specific_*`, `solo_specific_*`, `mute_specific_*`, `trackselect*`) y las notas 68 a 83 por el control de loops (`_setup_loop_controls`).
+    *   Al pasar al Modo 2 vía `_remove_mode1()`, los elementos de botón se desconectan (`disconnect()`), pero el framework interno de Ableton (`_Framework.InputControlElement` / C++ core) parece seguir reteniendo (`suppress_script_forwarding = True`) esas notas o manteniéndolas interceptadas en la tabla de mapeo de la superficie de control, impidiendo que el motor de audio las dirija a la pista MIDI armada.
+    *   *Acción recomendada:* Considerar no instanciar `ConfigurableButtonElement` fijos para esas notas en Modo 1, o implementar un ruteo explícito mediante `set_pad_translations` de la API nativa de Ableton Live para el Modo 2.
+
